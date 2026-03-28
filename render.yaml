@@ -20,28 +20,68 @@ services:
           type: keyvalue
           name: observability-redis
           property: connectionString
-      # 100% Guaranteed Internal Rendering Links
+      # BRUTE FORCE DYNAMIC DISCOVERY
       - key: AUTH_SERVICE_URL
-        value: http://auth-service-internal:10000
+        value: http://${AUTH_HOST}:10000
+      - key: AUTH_HOST
+        fromService:
+          type: pvt
+          name: auth-service-internal
+          property: host
       - key: CACHE_SERVICE_URL
-        value: http://cache-service-internal:10000
+        value: http://${CACHE_HOST}:10000
+      - key: CACHE_HOST
+        fromService:
+          type: pvt
+          name: cache-service-internal
+          property: host
       - key: DATABASE_SERVICE_URL
-        value: http://database-service-internal:10000
+        value: http://${DB_HOST}:10000
+      - key: DB_HOST
+        fromService:
+          type: pvt
+          name: database-service-internal
+          property: host
       - key: EVENT_PROCESSOR_SERVICE_URL
-        value: http://event-processor-service-internal:10000
+        value: http://${EP_HOST}:10000
+      - key: EP_HOST
+        fromService:
+          type: pvt
+          name: event-processor-service-internal
+          property: host
       - key: RCA_SERVICE_URL
-        value: http://rca-service-internal:10000
+        value: http://${RCA_HOST}:10000
+      - key: RCA_HOST
+        fromService:
+          type: pvt
+          name: rca-service-internal
+          property: host
       - key: SYNTHETIC_GENERATOR_SERVICE_URL
-        value: http://synthetic-generator-service-internal:10000
+        value: http://${SG_HOST}:10000
+      - key: SG_HOST
+        fromService:
+          type: pvt
+          name: synthetic-generator-service-internal
+          property: host
       - key: PAYMENT_SERVICE_URL
-        value: http://payment-service-internal:10000
+        value: http://${PAY_HOST}:10000
+      - key: PAY_HOST
+        fromService:
+          type: pvt
+          name: payment-service-internal
+          property: host
       - key: NOTIFICATION_SERVICE_URL
-        value: http://notification-service-internal:10000
+        value: http://${NOTIFY_HOST}:10000
+      - key: NOTIFY_HOST
+        fromService:
+          type: pvt
+          name: notification-service-internal
+          property: host
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
     healthCheckPath: /health
 
-  # Internal Microservices (Private) with explicit internal IDs
+  # Internal Microservices (Private)
   - type: pvt
     name: auth-service-internal
     plan: free

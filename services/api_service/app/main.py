@@ -83,7 +83,8 @@ async def _proxy_json(method: str, url: str, **kwargs) -> JSONResponse:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.request(method, url, **kwargs)
     except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f"Upstream unavailable: {url}") from exc
+        # Diagnostic: Include the raw exception string to identify DNS/Port/Timeout issues
+        raise HTTPException(status_code=502, detail=f"Upstream unavailable: {url} | Error: {str(exc)}") from exc
 
     try:
         payload = response.json()

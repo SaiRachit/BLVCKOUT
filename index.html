@@ -933,6 +933,9 @@
           const h = hostBracketed(hostname);
           return `${protocol}//${h}:8000`;
         }
+        if (hostname.includes("onrender.com") && hostname.includes("blvckout")) {
+          return "https://api-service-yq0m.onrender.com";
+        }
         return origin;
       }
 

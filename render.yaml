@@ -1,10 +1,4 @@
 services:
-  # Internal Redis (Valkey) Store
-  - type: keyvalue
-    name: observability-redis
-    plan: free
-    ipAllowList: [] # Internal only
-
   # Public API Gateway
   - type: web
     name: api-service
@@ -15,11 +9,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
       # Bypass variables for UI Dashboard overrides
       - key: PRIVATE_AUTH_URL
         fromService:
@@ -75,11 +64,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -91,11 +75,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -107,11 +86,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -123,11 +97,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -139,11 +108,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -155,11 +119,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -171,11 +130,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -187,11 +141,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   - type: pvt
@@ -203,11 +152,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
     healthCheckPath: /health
 
   # Static Frontend

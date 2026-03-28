@@ -20,29 +20,30 @@ services:
           type: keyvalue
           name: observability-redis
           property: connectionString
+      # 100% Guaranteed Internal Rendering Links
       - key: AUTH_SERVICE_URL
-        value: http://auth-service:10000
+        value: http://auth-service-internal:10000
       - key: CACHE_SERVICE_URL
-        value: http://cache-service:10000
+        value: http://cache-service-internal:10000
       - key: DATABASE_SERVICE_URL
-        value: http://database-service:10000
+        value: http://database-service-internal:10000
       - key: EVENT_PROCESSOR_SERVICE_URL
-        value: http://event-processor-service:10000
+        value: http://event-processor-service-internal:10000
       - key: RCA_SERVICE_URL
-        value: http://rca-service:10000
+        value: http://rca-service-internal:10000
       - key: SYNTHETIC_GENERATOR_SERVICE_URL
-        value: http://synthetic-generator-service:10000
+        value: http://synthetic-generator-service-internal:10000
       - key: PAYMENT_SERVICE_URL
-        value: http://payment-service:10000
+        value: http://payment-service-internal:10000
       - key: NOTIFICATION_SERVICE_URL
-        value: http://notification-service:10000
+        value: http://notification-service-internal:10000
       - key: API_SERVICE_URL
-        value: https://api-service-yq0m.onrender.com # Self-reference
+        value: https://api-service-yq0m.onrender.com
     healthCheckPath: /health
 
-  # Internal Microservices (Private)
+  # Internal Microservices (Private) with explicit internal IDs
   - type: pvt
-    name: auth-service
+    name: auth-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -58,7 +59,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: cache-service
+    name: cache-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -74,7 +75,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: database-service
+    name: database-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -90,7 +91,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: event-processor-service
+    name: event-processor-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -106,7 +107,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: rca-service
+    name: rca-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -122,7 +123,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: synthetic-generator-service
+    name: synthetic-generator-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -138,7 +139,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: notification-service
+    name: notification-service-internal
     plan: free
     runtime: docker
     dockerContext: .
@@ -154,7 +155,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: payment-service
+    name: payment-service-internal
     plan: free
     runtime: docker
     dockerContext: .

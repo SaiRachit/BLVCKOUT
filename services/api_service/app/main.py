@@ -33,19 +33,23 @@ from services.common.app.streaming import get_stream_publisher
 
 SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
 import os
-def _resolve_url(env_name: str, fallback_local: str, pvt_name: str) -> str:
-    if os.getenv("RENDER"):
-        return f"http://{pvt_name}:10000"
-    return get_env(env_name, fallback_local)
+def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
+    pvt_host = os.getenv(new_env)
+    if pvt_host:
+        if ":" in pvt_host:
+            return f"http://{pvt_host}"
+        else:
+            return f"http://{pvt_host}:10000"
+    return get_env(old_env, fallback)
 
-AUTH_SERVICE_URL = _resolve_url("AUTH_SERVICE_URL", "http://localhost:8007", "auth-pvt")
-CACHE_SERVICE_URL = _resolve_url("CACHE_SERVICE_URL", "http://localhost:8001", "cache-pvt")
-DATABASE_SERVICE_URL = _resolve_url("DATABASE_SERVICE_URL", "http://localhost:8002", "db-pvt")
-EVENT_PROCESSOR_SERVICE_URL = _resolve_url("EVENT_PROCESSOR_SERVICE_URL", "http://localhost:8003", "ep-pvt")
-RCA_SERVICE_URL = _resolve_url("RCA_SERVICE_URL", "http://localhost:8005", "rca-pvt")
-SYNTHETIC_GENERATOR_SERVICE_URL = _resolve_url("SYNTHETIC_GENERATOR_SERVICE_URL", "http://localhost:8004", "sg-pvt")
-PAYMENT_SERVICE_URL = _resolve_url("PAYMENT_SERVICE_URL", "http://localhost:8008", "pay-pvt")
-NOTIFICATION_SERVICE_URL = _resolve_url("NOTIFICATION_SERVICE_URL", "http://localhost:8009", "notif-pvt")
+AUTH_SERVICE_URL = _resolve_url("AUTH_SERVICE_URL", "PRIVATE_AUTH_URL", "http://localhost:8007")
+CACHE_SERVICE_URL = _resolve_url("CACHE_SERVICE_URL", "PRIVATE_CACHE_URL", "http://localhost:8001")
+DATABASE_SERVICE_URL = _resolve_url("DATABASE_SERVICE_URL", "PRIVATE_DB_URL", "http://localhost:8002")
+EVENT_PROCESSOR_SERVICE_URL = _resolve_url("EVENT_PROCESSOR_SERVICE_URL", "PRIVATE_EP_URL", "http://localhost:8003")
+RCA_SERVICE_URL = _resolve_url("RCA_SERVICE_URL", "PRIVATE_RCA_URL", "http://localhost:8005")
+SYNTHETIC_GENERATOR_SERVICE_URL = _resolve_url("SYNTHETIC_GENERATOR_SERVICE_URL", "PRIVATE_SG_URL", "http://localhost:8004")
+PAYMENT_SERVICE_URL = _resolve_url("PAYMENT_SERVICE_URL", "PRIVATE_PAY_URL", "http://localhost:8008")
+NOTIFICATION_SERVICE_URL = _resolve_url("NOTIFICATION_SERVICE_URL", "PRIVATE_NOTIF_URL", "http://localhost:8009")
 LOGS_TOPIC = get_env("LOGS_TOPIC", "logs_topic")
 METRICS_TOPIC = get_env("METRICS_TOPIC", "metrics_topic")
 PIPELINE_LABEL = "logs_topic -> processor -> RCA"

@@ -20,23 +20,47 @@ services:
           type: keyvalue
           name: observability-redis
           property: connectionString
-      # DEFINITIVE INTERNAL ADDRESSES
-      - key: AUTH_SERVICE_URL
-        value: http://auth-pvt:10000
-      - key: CACHE_SERVICE_URL
-        value: http://cache-pvt:10000
-      - key: DATABASE_SERVICE_URL
-        value: http://db-pvt:10000
-      - key: EVENT_PROCESSOR_SERVICE_URL
-        value: http://ep-pvt:10000
-      - key: RCA_SERVICE_URL
-        value: http://rca-pvt:10000
-      - key: SYNTHETIC_GENERATOR_SERVICE_URL
-        value: http://sg-pvt:10000
-      - key: PAYMENT_SERVICE_URL
-        value: http://pay-pvt:10000
-      - key: NOTIFICATION_SERVICE_URL
-        value: http://notif-pvt:10000
+      # Bypass variables for UI Dashboard overrides
+      - key: PRIVATE_AUTH_URL
+        fromService:
+          type: pvt
+          name: auth-pvt
+          property: host
+      - key: PRIVATE_CACHE_URL
+        fromService:
+          type: pvt
+          name: cache-pvt
+          property: host
+      - key: PRIVATE_DB_URL
+        fromService:
+          type: pvt
+          name: db-pvt
+          property: host
+      - key: PRIVATE_EP_URL
+        fromService:
+          type: pvt
+          name: ep-pvt
+          property: host
+      - key: PRIVATE_RCA_URL
+        fromService:
+          type: pvt
+          name: rca-pvt
+          property: host
+      - key: PRIVATE_SG_URL
+        fromService:
+          type: pvt
+          name: sg-pvt
+          property: host
+      - key: PRIVATE_NOTIF_URL
+        fromService:
+          type: pvt
+          name: notif-pvt
+          property: host
+      - key: PRIVATE_PAY_URL
+        fromService:
+          type: pvt
+          name: pay-pvt
+          property: host
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
     healthCheckPath: /health

@@ -32,14 +32,20 @@ from services.common.app.runtime import lifespan
 from services.common.app.streaming import get_stream_publisher
 
 SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
-AUTH_SERVICE_URL = get_env("AUTH_SERVICE_URL", "http://localhost:8007")
-CACHE_SERVICE_URL = get_env("CACHE_SERVICE_URL", "http://localhost:8001")
-DATABASE_SERVICE_URL = get_env("DATABASE_SERVICE_URL", "http://localhost:8002")
-EVENT_PROCESSOR_SERVICE_URL = get_env("EVENT_PROCESSOR_SERVICE_URL", "http://localhost:8003")
-RCA_SERVICE_URL = get_env("RCA_SERVICE_URL", "http://localhost:8005")
-SYNTHETIC_GENERATOR_SERVICE_URL = get_env("SYNTHETIC_GENERATOR_SERVICE_URL", "http://localhost:8004")
-PAYMENT_SERVICE_URL = get_env("PAYMENT_SERVICE_URL", "http://localhost:8008")
-NOTIFICATION_SERVICE_URL = get_env("NOTIFICATION_SERVICE_URL", "http://localhost:8009")
+import os
+def _resolve_url(env_name: str, fallback_local: str, pvt_name: str) -> str:
+    if os.getenv("RENDER"):
+        return f"http://{pvt_name}:10000"
+    return get_env(env_name, fallback_local)
+
+AUTH_SERVICE_URL = _resolve_url("AUTH_SERVICE_URL", "http://localhost:8007", "auth-pvt")
+CACHE_SERVICE_URL = _resolve_url("CACHE_SERVICE_URL", "http://localhost:8001", "cache-pvt")
+DATABASE_SERVICE_URL = _resolve_url("DATABASE_SERVICE_URL", "http://localhost:8002", "db-pvt")
+EVENT_PROCESSOR_SERVICE_URL = _resolve_url("EVENT_PROCESSOR_SERVICE_URL", "http://localhost:8003", "ep-pvt")
+RCA_SERVICE_URL = _resolve_url("RCA_SERVICE_URL", "http://localhost:8005", "rca-pvt")
+SYNTHETIC_GENERATOR_SERVICE_URL = _resolve_url("SYNTHETIC_GENERATOR_SERVICE_URL", "http://localhost:8004", "sg-pvt")
+PAYMENT_SERVICE_URL = _resolve_url("PAYMENT_SERVICE_URL", "http://localhost:8008", "pay-pvt")
+NOTIFICATION_SERVICE_URL = _resolve_url("NOTIFICATION_SERVICE_URL", "http://localhost:8009", "notif-pvt")
 LOGS_TOPIC = get_env("LOGS_TOPIC", "logs_topic")
 METRICS_TOPIC = get_env("METRICS_TOPIC", "metrics_topic")
 PIPELINE_LABEL = "logs_topic -> processor -> RCA"

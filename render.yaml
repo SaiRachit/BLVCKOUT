@@ -13,187 +13,196 @@ services:
       - key: PORT
         value: 10000
       - key: AUTH_SERVICE_URL
-        value: http://auth-service:8007
+        value: http://auth-service:10000
       - key: CACHE_SERVICE_URL
-        value: http://cache-service:8001
+        value: http://cache-service:10000
       - key: DATABASE_SERVICE_URL
-        value: http://database-service:8002
+        value: http://database-service:10000
       - key: PAYMENT_SERVICE_URL
-        value: http://payment-service:8008
+        value: http://payment-service:10000
       - key: NOTIFICATION_SERVICE_URL
-        value: http://notification-service:8009
+        value: http://notification-service:10000
       - key: EVENT_PROCESSOR_SERVICE_URL
-        value: http://event-processor-service:8003
+        value: http://event-processor-service:10000
       - key: RCA_SERVICE_URL
-        value: http://rca-service:8005
+        value: http://rca-service:10000
       - key: SYNTHETIC_GENERATOR_SERVICE_URL
-        value: http://synthetic-generator-service:8004
+        value: http://synthetic-generator-service:10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 2. Auth Service (Private)
+  # 2. Auth Service
   - type: web
     name: auth-service
     env: docker
     dockerContext: .
     dockerfilePath: services/auth_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: auth-service
       - key: PORT
-        value: 8007
+        value: 10000
       - key: CACHE_SERVICE_URL
-        value: http://cache-service:8001
+        value: http://cache-service:10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 3. Cache Service (Private)
+  # 3. Cache Service
   - type: web
     name: cache-service
     env: docker
     dockerContext: .
     dockerfilePath: services/cache_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: cache-service
       - key: PORT
-        value: 8001
+        value: 10000
       - key: DATABASE_SERVICE_URL
-        value: http://database-service:8002
+        value: http://database-service:10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 4. Database Service (Private)
+  # 4. Database Service
   - type: web
     name: database-service
     env: docker
     dockerContext: .
     dockerfilePath: services/database_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: database-service
       - key: PORT
-        value: 8002
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 5. Event Processor (Private)
+  # 5. Event Processor
   - type: web
     name: event-processor-service
     env: docker
     dockerContext: .
     dockerfilePath: services/event_processor_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: event-processor-service
       - key: PORT
-        value: 8003
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 6. RCA Service (Private)
+  # 6. RCA Service
   - type: web
     name: rca-service
     env: docker
     dockerContext: .
     dockerfilePath: services/rca_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: rca-service
       - key: PORT
-        value: 8005
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 7. Remediation Service (Private)
+  # 7. Remediation Service
   - type: web
     name: remediation-service
     env: docker
     dockerContext: .
     dockerfilePath: services/remediation_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: remediation-service
       - key: PORT
-        value: 8006
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 8. Notification Service (Private)
+  # 8. Notification Service
   - type: web
     name: notification-service
     env: docker
     dockerContext: .
     dockerfilePath: services/notification_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: notification-service
       - key: PORT
-        value: 8009
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 9. Payment Service (Private)
+  # 9. Payment Service
   - type: web
     name: payment-service
     env: docker
     dockerContext: .
     dockerfilePath: services/payment_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: payment-service
       - key: PORT
-        value: 8008
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
 
-  # 10. Synthetic Generator (Private)
+  # 10. Synthetic Generator
   - type: web
     name: synthetic-generator-service
     env: docker
     dockerContext: .
     dockerfilePath: services/synthetic_generator_service/Dockerfile
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: SERVICE_NAME
         value: synthetic-generator-service
       - key: PORT
-        value: 8004
+        value: 10000
       - key: REDIS_URL
         fromService:
           type: keyvalue

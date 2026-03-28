@@ -20,70 +20,30 @@ services:
           type: keyvalue
           name: observability-redis
           property: connectionString
-      # BRUTE FORCE DYNAMIC DISCOVERY
+      # DEFINITIVE INTERNAL ADDRESSES
       - key: AUTH_SERVICE_URL
-        value: http://${AUTH_HOST}:10000
-      - key: AUTH_HOST
-        fromService:
-          type: pvt
-          name: auth-service-internal
-          property: host
+        value: http://auth-pvt:10000
       - key: CACHE_SERVICE_URL
-        value: http://${CACHE_HOST}:10000
-      - key: CACHE_HOST
-        fromService:
-          type: pvt
-          name: cache-service-internal
-          property: host
+        value: http://cache-pvt:10000
       - key: DATABASE_SERVICE_URL
-        value: http://${DB_HOST}:10000
-      - key: DB_HOST
-        fromService:
-          type: pvt
-          name: database-service-internal
-          property: host
+        value: http://db-pvt:10000
       - key: EVENT_PROCESSOR_SERVICE_URL
-        value: http://${EP_HOST}:10000
-      - key: EP_HOST
-        fromService:
-          type: pvt
-          name: event-processor-service-internal
-          property: host
+        value: http://ep-pvt:10000
       - key: RCA_SERVICE_URL
-        value: http://${RCA_HOST}:10000
-      - key: RCA_HOST
-        fromService:
-          type: pvt
-          name: rca-service-internal
-          property: host
+        value: http://rca-pvt:10000
       - key: SYNTHETIC_GENERATOR_SERVICE_URL
-        value: http://${SG_HOST}:10000
-      - key: SG_HOST
-        fromService:
-          type: pvt
-          name: synthetic-generator-service-internal
-          property: host
+        value: http://sg-pvt:10000
       - key: PAYMENT_SERVICE_URL
-        value: http://${PAY_HOST}:10000
-      - key: PAY_HOST
-        fromService:
-          type: pvt
-          name: payment-service-internal
-          property: host
+        value: http://pay-pvt:10000
       - key: NOTIFICATION_SERVICE_URL
-        value: http://${NOTIFY_HOST}:10000
-      - key: NOTIFY_HOST
-        fromService:
-          type: pvt
-          name: notification-service-internal
-          property: host
+        value: http://notif-pvt:10000
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
     healthCheckPath: /health
 
-  # Internal Microservices (Private)
+  # Internal Microservices (Private Network)
   - type: pvt
-    name: auth-service-internal
+    name: auth-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -99,7 +59,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: cache-service-internal
+    name: cache-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -115,7 +75,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: database-service-internal
+    name: db-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -131,7 +91,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: event-processor-service-internal
+    name: ep-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -147,7 +107,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: rca-service-internal
+    name: rca-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -163,7 +123,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: synthetic-generator-service-internal
+    name: sg-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -179,7 +139,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: notification-service-internal
+    name: notif-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -195,7 +155,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: payment-service-internal
+    name: pay-pvt
     plan: free
     runtime: docker
     dockerContext: .
@@ -211,7 +171,7 @@ services:
     healthCheckPath: /health
 
   - type: pvt
-    name: remediation-service
+    name: remed-pvt
     plan: free
     runtime: docker
     dockerContext: .

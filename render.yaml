@@ -1,218 +1,195 @@
 services:
-  # 1. API Service (Public Entry Point)
+  # Internal Redis (Valkey) Store
+  - type: keyvalue
+    name: observability-redis
+    plan: free
+    ipAllowList: [] # Internal only
+
+  # Public API Gateway
   - type: web
     name: api-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/api_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: api-service
       - key: PORT
-        value: 10000
+        value: "10000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
       - key: AUTH_SERVICE_URL
         value: http://auth-service:10000
       - key: CACHE_SERVICE_URL
         value: http://cache-service:10000
       - key: DATABASE_SERVICE_URL
         value: http://database-service:10000
-      - key: PAYMENT_SERVICE_URL
-        value: http://payment-service:10000
-      - key: NOTIFICATION_SERVICE_URL
-        value: http://notification-service:10000
       - key: EVENT_PROCESSOR_SERVICE_URL
         value: http://event-processor-service:10000
       - key: RCA_SERVICE_URL
         value: http://rca-service:10000
       - key: SYNTHETIC_GENERATOR_SERVICE_URL
         value: http://synthetic-generator-service:10000
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
+      - key: PAYMENT_SERVICE_URL
+        value: http://payment-service:10000
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:10000
+      - key: API_SERVICE_URL
+        value: https://api-service-yq0m.onrender.com # Self-reference
+    healthCheckPath: /health
 
-  # 2. Auth Service
-  - type: web
+  # Internal Microservices (Private)
+  - type: pvt
     name: auth-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/auth_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: auth-service
       - key: PORT
-        value: 10000
-      - key: CACHE_SERVICE_URL
-        value: http://cache-service:10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
+    healthCheckPath: /health
 
-  # 3. Cache Service
-  - type: web
+  - type: pvt
     name: cache-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/cache_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: cache-service
       - key: PORT
-        value: 10000
-      - key: DATABASE_SERVICE_URL
-        value: http://database-service:10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
+    healthCheckPath: /health
 
-  # 4. Database Service
-  - type: web
+  - type: pvt
     name: database-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/database_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: database-service
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
+    healthCheckPath: /health
 
-  # 5. Event Processor
-  - type: web
+  - type: pvt
     name: event-processor-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/event_processor_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: event-processor-service
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
+    healthCheckPath: /health
 
-  # 6. RCA Service
-  - type: web
+  - type: pvt
     name: rca-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/rca_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: rca-service
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
-
-  # 7. Remediation Service
-  - type: web
-    name: remediation-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: services/remediation_service/Dockerfile
-    plan: free
     healthCheckPath: /health
-    envVars:
-      - key: SERVICE_NAME
-        value: remediation-service
-      - key: PORT
-        value: 10000
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
 
-  # 8. Notification Service
-  - type: web
-    name: notification-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: services/notification_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
-    envVars:
-      - key: SERVICE_NAME
-        value: notification-service
-      - key: PORT
-        value: 10000
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
-
-  # 9. Payment Service
-  - type: web
-    name: payment-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: services/payment_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
-    envVars:
-      - key: SERVICE_NAME
-        value: payment-service
-      - key: PORT
-        value: 10000
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: observability-redis
-          property: connectionString
-
-  # 10. Synthetic Generator
-  - type: web
+  - type: pvt
     name: synthetic-generator-service
-    env: docker
+    plan: free
+    runtime: docker
     dockerContext: .
     dockerfilePath: services/synthetic_generator_service/Dockerfile
-    plan: free
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_NAME
-        value: synthetic-generator-service
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: observability-redis
           property: connectionString
-      - key: SYNTHETIC_GENERATOR_ENABLED
-        value: "true"
+    healthCheckPath: /health
 
-  # 11. Redis Instance
-  - type: keyvalue
-    name: observability-redis
+  - type: pvt
+    name: notification-service
     plan: free
-    ipAllowList: [] # Only internal access
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: services/notification_service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+    healthCheckPath: /health
+
+  - type: pvt
+    name: payment-service
+    plan: free
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: services/payment_service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+    healthCheckPath: /health
+
+  - type: pvt
+    name: remediation-service
+    plan: free
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: services/remediation_service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+    healthCheckPath: /health
+
+  # Static Frontend
+  - type: static_site
+    name: blvckout
+    plan: free
+    publishDir: .
+    envVars:
+      - key: API_URL
+        value: https://api-service-yq0m.onrender.com

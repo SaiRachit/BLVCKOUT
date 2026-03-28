@@ -1,0 +1,215 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: observability-redis
+    ports:
+      - "6379:6379"
+
+  database-service:
+    build:
+      context: .
+      dockerfile: services/database_service/Dockerfile
+    container_name: database-service
+    environment:
+      SERVICE_NAME: database-service
+      SERVICE_PORT: 8002
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis
+      - payment-service
+
+  cache-service:
+    build:
+      context: .
+      dockerfile: services/cache_service/Dockerfile
+    container_name: cache-service
+    environment:
+      SERVICE_NAME: cache-service
+      SERVICE_PORT: 8001
+      DATABASE_SERVICE_URL: http://database-service:8002
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+      - database-service
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth_service/Dockerfile
+    container_name: auth-service
+    environment:
+      SERVICE_NAME: auth-service
+      SERVICE_PORT: 8007
+      CACHE_SERVICE_URL: http://cache-service:8001
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8007:8007"
+    depends_on:
+      - redis
+      - cache-service
+
+  api-service:
+    build:
+      context: .
+      dockerfile: services/api_service/Dockerfile
+    container_name: api-service
+    environment:
+      SERVICE_NAME: api-service
+      SERVICE_PORT: 8000
+      API_SERVICE_URL: http://api-service:8000
+      AUTH_SERVICE_URL: http://auth-service:8007
+      CACHE_SERVICE_URL: http://cache-service:8001
+      DATABASE_SERVICE_URL: http://database-service:8002
+      PAYMENT_SERVICE_URL: http://payment-service:8008
+      NOTIFICATION_SERVICE_URL: http://notification-service:8009
+      EVENT_PROCESSOR_SERVICE_URL: http://event-processor-service:8003
+      RCA_SERVICE_URL: http://rca-service:8005
+      SYNTHETIC_GENERATOR_SERVICE_URL: http://synthetic-generator-service:8004
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - auth-service
+
+  event-processor-service:
+    build:
+      context: .
+      dockerfile: services/event_processor_service/Dockerfile
+    container_name: event-processor-service
+    environment:
+      SERVICE_NAME: event-processor-service
+      SERVICE_PORT: 8003
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+      NORMALIZED_TOPIC: normalized_events_topic
+      HEALTH_TOPIC: service_health_topic
+      LATENCY_THRESHOLD_MS: 500
+      ERROR_SPIKE_COUNT: 2
+      WINDOW_SECONDS: 3
+      PROCESS_BATCH_SIZE: 16
+      ORDERING_BUFFER_SECONDS: 0.1
+    ports:
+      - "8003:8003"
+    depends_on:
+      - redis
+
+  synthetic-generator-service:
+    build:
+      context: .
+      dockerfile: services/synthetic_generator_service/Dockerfile
+    container_name: synthetic-generator-service
+    environment:
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+      SYNTHETIC_GENERATOR_ENABLED: ${SYNTHETIC_GENERATOR_ENABLED:-true}
+    ports:
+      - "8004:8004"
+    depends_on:
+      - redis
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification_service/Dockerfile
+    container_name: notification-service
+    environment:
+      SERVICE_NAME: notification-service
+      SERVICE_PORT: 8009
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8009:8009"
+    depends_on:
+      - redis
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment_service/Dockerfile
+    container_name: payment-service
+    environment:
+      SERVICE_NAME: payment-service
+      SERVICE_PORT: 8008
+      NOTIFICATION_SERVICE_URL: http://notification-service:8009
+      DATABASE_SERVICE_URL: http://database-service:8002
+      STREAM_URL: redis://redis:6379/0
+      LOGS_TOPIC: logs_topic
+      METRICS_TOPIC: metrics_topic
+    ports:
+      - "8008:8008"
+    depends_on:
+      - redis
+      - notification-service
+
+  rca-service:
+    build:
+      context: .
+      dockerfile: services/rca_service/Dockerfile
+    container_name: rca-service
+    environment:
+      SERVICE_NAME: rca-service
+      STREAM_URL: redis://redis:6379/0
+      NORMALIZED_TOPIC: normalized_events_topic
+      HEALTH_TOPIC: service_health_topic
+      WINDOW_SECONDS: 4
+      PROPAGATION_DELAY_SECONDS: 1.5
+    ports:
+      - "8005:8005"
+    depends_on:
+      - redis
+
+  remediation-service:
+    build:
+      context: .
+      dockerfile: services/remediation_service/Dockerfile
+    container_name: remediation-service
+    environment:
+      SERVICE_NAME: remediation-service
+      STREAM_URL: redis://redis:6379/0
+      REMEDIATION_TOPIC: remediation_triggers_topic
+      REMEDIATION_RESULTS_TOPIC: remediation_results_topic
+      CACHE_SERVICE_URL: http://cache-service:8001
+      AUTH_SERVICE_URL: http://auth-service:8007
+      DATABASE_SERVICE_URL: http://database-service:8002
+      PAYMENT_SERVICE_URL: http://payment-service:8008
+      NOTIFICATION_SERVICE_URL: http://notification-service:8009
+      SYNTHETIC_GENERATOR_URL: http://synthetic-generator-service:8004
+      REMEDIATION_COOLDOWN_SECONDS: 3
+    ports:
+      - "8006:8006"
+    depends_on:
+      - redis
+      - cache-service
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api-service
+      - cache-service
+      - database-service
+      - event-processor-service
+      - rca-service
+      - remediation-service

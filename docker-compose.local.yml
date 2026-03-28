@@ -1,0 +1,33 @@
+services:
+  redis:
+    ports: []
+  api-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  cache-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  auth-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  database-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  payment-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  notification-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  event-processor-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  synthetic-generator-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  rca-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0
+  remediation-service:
+    environment:
+      STREAM_URL: redis://host.docker.internal:6379/0

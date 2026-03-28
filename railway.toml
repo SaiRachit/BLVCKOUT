@@ -1,0 +1,10 @@
+# Railway merges this with each service’s dashboard settings.
+# Do NOT set dockerfilePath here: this repo has many services; set the Dockerfile path
+# per service in Railway (Settings → Build) or use RAILWAY_DOCKERFILE_PATH on that service.
+#
+# See RAILWAY.md for the full multi-service layout.
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"

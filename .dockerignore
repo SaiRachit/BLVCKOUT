@@ -1,0 +1,16 @@
+.git
+.gitignore
+.cursor
+.idea
+.vscode
+__pycache__
+*.py[cod]
+*$py.class
+.pytest_cache
+.mypy_cache
+.ruff_cache
+venv
+.venv
+env
+*.egg-info
+terminals

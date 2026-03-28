@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "services"
+    metrics_path: /export/prometheus
+    static_configs:
+      - targets:
+          - api-service:8000
+          - cache-service:8001
+          - database-service:8002
+          - event-processor-service:8003
+          - rca-service:8005
+          - remediation-service:8006

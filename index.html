@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Observability System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["ui-sans-serif", "system-ui", "sans-serif"],
+            },
+            colors: {
+              panel: "#101827",
+              panelSoft: "#172033",
+              accent: "#f59e0b",
+              success: "#22c55e",
+              danger: "#ef4444",
+            },
+            boxShadow: {
+              glow: "0 10px 30px rgba(0, 0, 0, 0.28)",
+              redglow: "0 0 0 1px rgba(239, 68, 68, 0.16), 0 0 30px rgba(239, 68, 68, 0.25)",
+              greenglow: "0 0 0 1px rgba(34, 197, 94, 0.16), 0 0 30px rgba(34, 197, 94, 0.22)",
+            },
+            animation: {
+              blink: "blink 1.4s ease-in-out infinite",
+              floatin: "floatin 0.55s ease-out both",
+              fadein: "fadein 0.35s ease-out both",
+            },
+            keyframes: {
+              blink: {
+                "0%, 100%": { opacity: "1" },
+                "50%": { opacity: "0.35" },
+              },
+              floatin: {
+                "0%": { opacity: "0", transform: "translateY(10px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+              fadein: {
+                "0%": { opacity: "0" },
+                "100%": { opacity: "1" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .dashboard-widget {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        --mx: 50%;
+        --my: 50%;
+        --edge-direction: to bottom;
+        --widget-glow-opacity: 0;
+      }
+
+      .dashboard-widget::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: var(--widget-glow-opacity);
+        padding: 1px;
+        background: linear-gradient(var(--edge-direction), rgba(245, 158, 11, 0.95), rgba(245, 158, 11, 0.22) 24%, transparent 55%);
+        box-shadow: 0 0 28px rgba(245, 158, 11, 0.16);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        transition: opacity 180ms ease;
+      }
+
+      .dashboard-widget.is-hovered {
+        border-color: rgba(245, 158, 11, 0.34) !important;
+      }
+
+      .landing-shell {
+        position: relative;
+        z-index: 1;
+      }
+
+      .landing-stage {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .landing-parallax {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .landing-parallax-word {
+        position: absolute;
+        font-size: clamp(4.5rem, 12vw, 10rem);
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.045);
+        text-shadow: 0 0 30px rgba(245, 158, 11, 0.08);
+        transform: translate3d(var(--word-shift-x, 0px), var(--word-shift-y, 0px), 0);
+        will-change: transform;
+        transition: transform 120ms linear;
+        white-space: nowrap;
+      }
+
+      .landing-parallax-word[data-word="signal"] {
+        top: 12%;
+        left: -2%;
+      }
+
+      .landing-parallax-word[data-word="observe"] {
+        top: 42%;
+        right: -6%;
+      }
+
+      .landing-parallax-word[data-word="resolve"] {
+        bottom: 10%;
+        left: 8%;
+      }
+
+      .tracker-line {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        transform: translateX(-50%);
+        background: linear-gradient(to bottom, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.75), rgba(16, 24, 39, 0.25));
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+      }
+
+      .tracker-progress {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 4px;
+        height: 0;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: linear-gradient(to bottom, rgba(250, 204, 21, 0.95), rgba(16, 185, 129, 0.85));
+        box-shadow: 0 0 36px rgba(245, 158, 11, 0.5);
+        transition: height 180ms ease;
+      }
+
+      .tracker-core {
+        position: absolute;
+        left: 50%;
+        top: 12vh;
+        width: 20px;
+        height: 20px;
+        transform: translate(-50%, 0);
+        border-radius: 999px;
+        background: radial-gradient(circle at 35% 35%, #fde68a, #f59e0b 55%, #b45309 100%);
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.12), 0 0 40px rgba(245, 158, 11, 0.45);
+        transition: top 180ms ease;
+      }
+
+      .landing-copy {
+        --copy-shift-x: 0px;
+        --copy-shift-y: 0px;
+        opacity: 0;
+        transform: translate3d(var(--copy-shift-x), calc(28px + var(--copy-shift-y)), 0);
+        will-change: transform, opacity;
+        transition: opacity 500ms ease, transform 500ms ease;
+      }
+
+      .landing-copy.is-visible {
+        opacity: 1;
+        transform: translate3d(var(--copy-shift-x), var(--copy-shift-y), 0);
+      }
+
+      .story-card {
+        --story-entry-x: 0px;
+        --story-shift-x: 0px;
+        --story-shift-y: 0px;
+        opacity: 0;
+        transform: translate3d(calc(var(--story-entry-x) + var(--story-shift-x)), calc(30px + var(--story-shift-y)), 0);
+        will-change: transform, opacity;
+        transition: opacity 500ms ease, transform 500ms ease, border-color 250ms ease, box-shadow 250ms ease;
+      }
+
+      .story-card[data-side="left"] {
+        --story-entry-x: -36px;
+      }
+
+      .story-card[data-side="right"] {
+        --story-entry-x: 36px;
+      }
+
+      .story-card.is-visible {
+        opacity: 1;
+        transform: translate3d(var(--story-shift-x), var(--story-shift-y), 0);
+        border-color: rgba(245, 158, 11, 0.22);
+        box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1), 0 20px 50px rgba(0, 0, 0, 0.32);
+      }
+
+      .dashboard-shell {
+        position: relative;
+        z-index: 1;
+      }
+
+      .dashboard-shell.is-hidden {
+        display: none;
+      }
+
+      .dashboard-shell.is-visible {
+        display: block;
+      }
+
+      .unlock-prompt {
+        opacity: 0.35;
+        transition: opacity 240ms ease, transform 240ms ease, border-color 240ms ease;
+      }
+
+      .unlock-prompt.is-ready {
+        opacity: 1;
+        transform: translateY(-4px);
+        border-color: rgba(74, 222, 128, 0.28);
+      }
+    </style>
+    <style>
+      .dashboard-container .dashboard-collapsible-body:not(.hidden) {
+        content-visibility: auto;
+      }
+      .dashboard-container .incident-focus-card {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .dashboard-container .incident-focus-card .incident-focus-label {
+        letter-spacing: 0.14em;
+        line-height: 1.35;
+      }
+      .dashboard-container #summary-incident {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+      @media (min-width: 640px) {
+        .dashboard-container #summary-incident {
+          font-size: 1.0625rem;
+        }
+      }
+      .dashboard-container .dashboard-collapsible-toggle {
+        flex-shrink: 0;
+      }
+
+      .dashboard-container .dashboard-incident-history {
+        border-color: rgba(59, 130, 246, 0.18);
+        background: linear-gradient(165deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.78) 100%);
+      }
+      .dashboard-container .dashboard-incident-history .dashboard-incident-list-wrap {
+        max-height: min(22rem, 52vh);
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+        padding-right: 2px;
+      }
+      .dashboard-container .dashboard-incident-item {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+      .dashboard-container .dashboard-incident-item:hover {
+        border-color: rgba(251, 191, 36, 0.22);
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.06);
+      }
+      .dashboard-container .dashboard-incident-item.is-selected {
+        border-color: rgba(251, 191, 36, 0.35);
+        background: rgba(251, 191, 36, 0.06);
+      }
+      .dashboard-container .dashboard-incident-item .dashboard-incident-status {
+        display: inline-block;
+        max-width: 6.75rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 0.625rem;
+        letter-spacing: 0.1em;
+        padding: 0.2rem 0.45rem;
+        line-height: 1.2;
+      }
+      .dashboard-container .dashboard-side-panel {
+        border-color: rgba(255, 255, 255, 0.09);
+        background: rgba(15, 23, 42, 0.88);
+      }
+      .dashboard-container .dashboard-side-panel--latency {
+        border-color: rgba(52, 211, 153, 0.16);
+      }
+      .dashboard-container .dashboard-side-panel--control {
+        border-color: rgba(251, 191, 36, 0.18);
+      }
+      .dashboard-container .dashboard-panel-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem 1rem;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .dashboard-container .dashboard-panel-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+      .dashboard-container .dashboard-collapsed-hint {
+        margin: 0 0 0.25rem;
+        font-size: 0.6875rem;
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+        color: rgba(148, 163, 184, 0.85);
+      }
+      .dashboard-container .dashboard-section-expanded .dashboard-collapsed-hint {
+        display: none;
+      }
+      .dashboard-container .dashboard-chip {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(226, 232, 240, 0.95);
+      }
+      .dashboard-container .dashboard-collapsible-toggle {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(226, 232, 240, 0.95);
+      }
+      .dashboard-container .dashboard-collapsible-toggle:hover {
+        border-color: rgba(251, 191, 36, 0.35);
+        color: rgb(254, 243, 199);
+      }
+      .dashboard-container .dashboard-incident-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .dashboard-container .dashboard-incident-actions button {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.5rem 0.65rem;
+        border-radius: 0.5rem;
+      }
+      .dashboard-container .ml-insights-chart {
+        background-color: rgba(2, 6, 23, 0.35);
+        background-image: linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+        background-size: 100% 32px, 40px 100%;
+      }
+      .dashboard-container .ml-insights-chart svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: 220px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+      <div class="absolute left-[-10%] top-[-12%] h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl"></div>
+      <div class="absolute right-[-8%] top-[10%] h-80 w-80 rounded-full bg-amber-500/10 blur-3xl"></div>
+      <div class="absolute bottom-[-10%] left-[25%] h-80 w-80 rounded-full bg-red-500/10 blur-3xl"></div>
+    </div>
+    <section id="landing-page" class="landing-shell">
+      <div class="landing-stage">
+        <div class="landing-parallax" aria-hidden="true">
+          <div class="landing-parallax-word" data-word="signal" id="parallax-word-signal">Signal</div>
+          <div class="landing-parallax-word" data-word="observe" id="parallax-word-observe">Observe</div>
+          <div class="landing-parallax-word" data-word="resolve" id="parallax-word-resolve">Resolve</div>
+        </div>
+        <div class="tracker-line"></div>
+        <div id="tracker-progress" class="tracker-progress"></div>
+        <div id="tracker-core" class="tracker-core"></div>
+        <div class="relative mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <div class="grid w-full grid-cols-1 gap-10 lg:grid-cols-[1fr_120px_1fr]">
+            <div class="landing-copy self-start pt-24" id="landing-hero-copy">
+              <p class="text-xs uppercase tracking-[0.45em] text-amber-300">Mission Track</p>
+              <h1 class="mt-5 max-w-xl text-5xl font-semibold leading-tight text-white sm:text-6xl">
+                AI Observability, told as a live incident journey.
+              </h1>
+              <p class="mt-6 max-w-lg text-base leading-7 text-slate-300">
+                Scroll through the pipeline to follow how signals move, where failures surface, and how our RCA dashboard turns raw operational noise into action.
+              </p>
+            </div>
+            <div class="hidden lg:block"></div>
+            <div class="landing-copy self-end pb-24 lg:text-right" id="landing-side-copy">
+              <p class="text-sm uppercase tracking-[0.34em] text-slate-500">From Signal to Recovery</p>
+              <p class="mt-4 max-w-md text-sm leading-7 text-slate-400 lg:ml-auto">
+                Every reveal on the rail marks another stage in the system: service telemetry, anomaly normalization, root cause inference, and remediation readiness.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative z-10">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="h-[22vh]"></div>
+
+          <section class="grid min-h-[80vh] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_120px_1fr]">
+            <div class="story-card rounded-3xl border border-white/10 bg-panel/85 p-7 backdrop-blur" data-side="left">
+              <p class="text-xs uppercase tracking-[0.32em] text-amber-300">Telemetry Layer</p>
+              <h2 class="mt-4 text-2xl font-semibold text-white">Distributed services emit a continuous stream of clues.</h2>
+              <p class="mt-4 text-sm leading-7 text-slate-300">
+                API, auth, cache, database, payment, and notification services all produce structured logs and metrics, giving the platform a synchronized picture of live behavior.
+              </p>
+            </div>
+            <div></div>
+            <div></div>
+          </section>
+
+          <section class="grid min-h-[80vh] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_120px_1fr]">
+            <div></div>
+            <div></div>
+            <div class="story-card rounded-3xl border border-white/10 bg-panel/85 p-7 backdrop-blur" data-side="right">
+              <p class="text-xs uppercase tracking-[0.32em] text-emerald-300">Processing Layer</p>
+              <h2 class="mt-4 text-2xl font-semibold text-white">Event normalization transforms raw noise into usable state.</h2>
+              <p class="mt-4 text-sm leading-7 text-slate-300">
+                The event processor aligns timestamps, infers health, and builds a consistent operational timeline so RCA has a reliable substrate to reason over.
+              </p>
+            </div>
+          </section>
+
+          <section class="grid min-h-[80vh] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_120px_1fr]">
+            <div class="story-card rounded-3xl border border-white/10 bg-panel/85 p-7 backdrop-blur" data-side="left">
+              <p class="text-xs uppercase tracking-[0.32em] text-red-300">Inference Layer</p>
+              <h2 class="mt-4 text-2xl font-semibold text-white">Root cause analysis traces impact through the dependency chain.</h2>
+              <p class="mt-4 text-sm leading-7 text-slate-300">
+                Instead of stopping at symptoms, the system scores hypotheses, correlates degraded services, and highlights the most plausible initiating fault in seconds.
+              </p>
+            </div>
+            <div></div>
+            <div></div>
+          </section>
+
+          <section class="grid min-h-[80vh] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_120px_1fr]">
+            <div></div>
+            <div></div>
+            <div class="story-card rounded-3xl border border-white/10 bg-panel/85 p-7 backdrop-blur" data-side="right">
+              <p class="text-xs uppercase tracking-[0.32em] text-cyan-300">Control Layer</p>
+              <h2 class="mt-4 text-2xl font-semibold text-white">The dashboard becomes an operational cockpit, not just a readout.</h2>
+              <p class="mt-4 text-sm leading-7 text-slate-300">
+                Engineers can inspect incidents, trace journeys, watch SLA behavior, and inject controlled failures to validate resilience end to end.
+              </p>
+            </div>
+          </section>
+
+          <section id="landing-finish" class="flex min-h-[90vh] items-center justify-center">
+            <div id="unlock-prompt" class="unlock-prompt rounded-3xl border border-white/10 bg-white/[0.04] px-8 py-6 text-center backdrop-blur">
+              <p class="text-xs uppercase tracking-[0.38em] text-slate-500">Journey Complete</p>
+              <p class="mt-4 text-2xl font-semibold text-white sm:text-3xl">Press any key to access dashboard</p>
+              <p class="mt-3 text-sm text-slate-400">The live observability surface is ready behind this intro.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <div id="dashboard-shell" class="dashboard-shell is-hidden">
+    <div class="dashboard-container">
+    <main class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <header class="mb-5 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-300 drop-shadow-[0_0_18px_rgba(245,158,11,0.12)]">
+            Distributed Dashboard
+          </p>
+          <h1 class="bg-gradient-to-r from-white via-amber-100 to-slate-200 bg-clip-text text-3xl font-semibold tracking-tight text-transparent drop-shadow-[0_0_28px_rgba(245,158,11,0.1)] sm:text-4xl">
+            AI Observability System
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm font-medium text-amber-300">
+            Real-time Root Cause Analysis + Automated Remediation
+          </p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-glow backdrop-blur">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Last Refresh</p>
+              <p id="last-refresh" class="mt-1 text-sm font-medium text-slate-200">Waiting for events...</p>
+            </div>
+            <div class="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1">
+              <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-blink shadow-[0_0_16px_rgba(74,222,128,0.8)]"></span>
+              <span class="text-xs font-semibold tracking-[0.22em] text-emerald-300">LIVE</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="mb-8 grid gap-4 grid-cols-1 md:grid-cols-2">
+        <article class="dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-6 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin">
+          <p class="text-xs uppercase tracking-[0.28em] text-slate-400">System State</p>
+          <div class="mt-4 flex items-center justify-between">
+            <h2 id="summary-status" class="text-2xl font-semibold text-slate-100">Unknown</h2>
+            <span id="summary-status-dot" class="h-3 w-3 rounded-full bg-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.7)]"></span>
+          </div>
+          <p id="summary-status-note" class="mt-3 text-sm text-slate-400">Awaiting RCA signal.</p>
+        </article>
+
+        <article class="dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-6 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin">
+          <p class="text-xs uppercase tracking-[0.28em] text-slate-400">Affected Services</p>
+          <h2 id="summary-affected" class="mt-4 text-2xl font-semibold text-slate-100">0</h2>
+          <p id="summary-services-list" class="mt-3 text-sm text-slate-400">No downstream impact.</p>
+        </article>
+      </section>
+
+      <section class="grid gap-6 lg:grid-cols-12">
+        <article class="incident-focus-card dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-7 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin lg:col-span-5">
+          <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0 flex-1 pr-2">
+              <p class="incident-focus-label text-[11px] font-semibold uppercase text-slate-400">
+                Active incident &amp; root cause
+              </p>
+              <p class="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500">Deep dependency analysis</p>
+              <h2
+                id="summary-incident"
+                class="mt-2 leading-tight tracking-tight text-slate-100"
+                title=""
+              >
+                None
+              </h2>
+              <p id="summary-incident-note" class="mt-2 text-sm text-slate-400">No active incident detected.</p>
+            </div>
+            <div class="flex flex-shrink-0 flex-wrap items-start justify-end gap-2 pt-0.5 lg:max-w-[48%]">
+              <button
+                id="explain-mode-toggle"
+                class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 transition duration-200 hover:border-amber-300/40 hover:text-amber-200"
+              >
+                Explain Mode 🧠
+              </button>
+              <button
+                id="back-to-live"
+                class="hidden rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200 transition duration-200 hover:border-emerald-300/40"
+              >
+                Back to Live
+              </button>
+              <span id="rca-confidence-badge" class="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-medium text-yellow-300">
+                0%
+              </span>
+            </div>
+          </div>
+          <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/5">
+            <div id="rca-confidence-bar" class="h-full w-0 rounded-full bg-yellow-400 transition-all duration-300"></div>
+          </div>
+
+          <div id="rca-root-box" class="mt-6 rounded-2xl border border-red-400/20 bg-red-500/10 p-5 shadow-redglow animate-pulse">
+            <p class="text-xs uppercase tracking-[0.28em] text-red-300">Primary Root Cause</p>
+            <h3 id="rca-root-cause" class="mt-2 text-3xl font-semibold text-red-200">Waiting for events...</h3>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Confidence Explanation</p>
+              <p id="rca-confidence-explanation" class="mt-2 text-sm leading-6 text-slate-300">Waiting for events...</p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">ML Signals (Logs · Metrics · Traces)</p>
+              <p id="rca-ml-signals-inline" class="mt-2 text-sm leading-6 text-slate-300">—</p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Alternative Causes</p>
+              <div id="rca-alternatives" class="mt-3 flex flex-wrap gap-2">
+                <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-400 animate-pulse">Waiting for events...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-7 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin lg:col-span-7">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.28em] text-slate-400">Dependency chain view</p>
+              <h2 class="mt-2 text-xl font-semibold text-white">Dependency Chain Analysis</h2>
+              <p class="mt-2 text-xs leading-relaxed text-slate-500">Derived from logs, metrics, and traces · upstream / downstream impact</p>
+            </div>
+            <span id="timeline-window" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+              Window: --
+            </span>
+          </div>
+
+          <div id="timeline-list" class="mt-6 max-h-[28rem] space-y-3 overflow-y-auto pr-1">
+            <div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400 animate-pulse">
+              Waiting for events...
+            </div>
+          </div>
+        </article>
+
+        <article
+          id="ml-insights-panel"
+          class="dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-7 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin lg:col-span-12"
+          data-ml-insights=""
+        >
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.28em] text-slate-400">Deep dependency analysis</p>
+              <h2 class="mt-1 text-xl font-semibold text-white">ML Signal Insights</h2>
+              <p class="mt-2 max-w-2xl text-sm text-slate-500">Aggregated signals from logs, metrics, and traces</p>
+            </div>
+            <div id="ml-signal-legend" class="flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
+              <span class="inline-flex items-center gap-2">
+                <span class="inline-block h-0.5 w-6 rounded-full bg-amber-400/90"></span>
+                Metrics (latency)
+              </span>
+              <span class="inline-flex items-center gap-2">
+                <span class="inline-block h-2 w-2 rounded-full bg-red-400/90"></span>
+                Log spikes
+              </span>
+              <span class="inline-flex items-center gap-2">
+                <span class="inline-block h-2 w-2 rotate-45 border border-cyan-400/70 bg-cyan-500/30"></span>
+                Traces
+              </span>
+            </div>
+          </div>
+          <div
+            id="ml-insights-chart"
+            class="ml-insights-chart mt-6 min-h-[188px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 p-3"
+            data-rendered="0"
+          >
+            <p class="flex min-h-[172px] items-center justify-center px-4 text-center text-sm text-slate-500">Scroll into view to load chart…</p>
+          </div>
+        </article>
+
+        <section class="dashboard-collapsible dashboard-widget rounded-3xl border border-white/10 bg-panel/90 p-5 shadow-glow transition duration-200 hover:scale-[1.01] animate-floatin lg:col-span-12">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-xs uppercase tracking-[0.28em] text-slate-400">Trace View</p>
+              <h2 class="mt-1 text-lg font-semibold text-white">Request Journey</h2>
+            </div>
+            <button
+              type="button"
+              class="dashboard-collapsible-toggle rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-amber-300/40 hover:text-amber-200"
+              aria-expanded="false"
+              data-collapsible-target="trace"
+            >
+              Expand
+            </button>
+          </div>
+          <div id="dashboard-trace-body" class="dashboard-collapsible-body mt-4 hidden">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <p class="max-w-2xl text-sm text-slate-400">
+                Inspect the propagated trace path using a <code class="rounded bg-white/5 px-1.5 py-0.5 text-slate-200">trace_id</code>.
+              </p>
+              <div class="flex w-full max-w-2xl flex-col gap-3 sm:flex-row lg:justify-end">
+                <input
+                  id="trace-input"
+                  type="text"
+                  placeholder="Enter trace_id"
+                  class="w-full rounded-2xl border border-white/10 bg-panelSoft px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/10"
+                />
+                <button
+                  id="trace-load"
+                  class="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-200 transition duration-200 hover:border-amber-300/50 hover:bg-amber-500/20"
+                >
+                  Load Trace
+                </button>
+              </div>
+            </div>
+
+            <div id="trace-status" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+              Enter a trace ID to visualize the service chain.
+            </div>
+
+            <div id="trace-chain" class="mt-6 flex flex-wrap items-center gap-3">
+              <div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                Trace nodes will appear here.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <article id="incident-history-card" class="dashboard-widget dashboard-incident-history rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4">
+          <div class="flex items-start justify-between gap-3 border-b border-white/[0.06] pb-4">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Incident History</p>
+              <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Recent analyses</h2>
+            </div>
+            <span id="incident-count" class="dashboard-chip tabular-nums shrink-0">
+              0 total
+            </span>
+          </div>
+
+          <div id="incident-list" class="dashboard-incident-list-wrap mt-4 space-y-2 transition-opacity duration-300">
+            <div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400 animate-pulse">
+              Waiting for events...
+            </div>
+          </div>
+
+          <div id="incident-detail-panel" class="mt-4 hidden overflow-y-auto rounded-3xl border border-amber-400/20 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity duration-300">
+            <div class="flex flex-col gap-5">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs tracking-[0.24em] text-amber-300 sm:mt-1">📋 Incident Report</p>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    id="detail-download-btn"
+                    class="whitespace-nowrap rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-cyan-200 transition duration-200 hover:border-cyan-300/50 hover:bg-cyan-400/20"
+                  >
+                    Download
+                  </button>
+                  <span id="detail-status-badge" class="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-slate-300">
+                    LIVE
+                  </span>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <div id="detail-incident-id" class="break-all text-sm font-medium text-slate-200">None selected</div>
+              </div>
+            </div>
+
+            <div id="detail-root-cause-box" class="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 p-4">
+              <p class="text-xs tracking-[0.22em] text-red-300">🔴 Primary Root Cause</p>
+              <p id="detail-root-cause" class="mt-2 text-xl font-semibold text-red-200">Unknown</p>
+              <p class="mt-1 text-[10px] text-red-400/70">Identified based on correlated logs, metrics, and traces</p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-3">
+              <div class="flex-1 min-w-[130px] rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p class="text-xs tracking-[0.22em] text-slate-500 cursor-help" title="Likelihood that this root cause is accurate">Confidence Score</p>
+                <div id="detail-confidence-container" class="mt-2">
+                  <span id="detail-confidence" class="text-lg font-semibold text-white">0%</span>
+                  <span class="block text-xs font-normal text-slate-400 mt-0.5 whitespace-nowrap">Model Score</span>
+                </div>
+              </div>
+              <div class="flex-1 min-w-[130px] rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p class="text-xs tracking-[0.22em] text-slate-500">Status</p>
+                <p id="detail-status-text" class="mt-2 text-sm font-semibold text-slate-200">—</p>
+              </div>
+              <div class="flex-1 min-w-[130px] rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p class="text-xs tracking-[0.22em] text-slate-500">Outcome</p>
+                <p id="detail-outcome" class="mt-2 text-sm leading-6 text-slate-300">Awaiting selection.</p>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-2xl border border-white/10 bg-panelSoft p-4">
+              <p class="text-xs tracking-[0.22em] text-slate-500">Confidence Explanation</p>
+              <p id="detail-confidence-explanation" class="mt-2 text-sm leading-6 text-slate-300">Awaiting selection.</p>
+            </div>
+
+            <div class="mt-4 space-y-4">
+              <div>
+                <p class="text-xs tracking-[0.22em] text-slate-500">Dependency Chain</p>
+                <p id="detail-causal-chain" class="mt-2 text-sm leading-6 text-slate-300">Awaiting selection.</p>
+              </div>
+              <div>
+                <p class="text-xs tracking-[0.22em] text-slate-500">Reasoning</p>
+                <div id="detail-reasoning" class="mt-2 flex flex-wrap gap-2">
+                  <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-400">Awaiting selection.</span>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs tracking-[0.22em] text-slate-500">ML Signals (Logs · Metrics · Traces)</p>
+                <p id="detail-ml-signals" class="mt-2 text-sm leading-6 text-slate-300">Awaiting selection.</p>
+              </div>
+              <div>
+                <p class="text-xs tracking-[0.22em] text-slate-500">Action Taken</p>
+                <p id="detail-action" class="mt-2 text-sm leading-6 text-slate-300">Awaiting selection.</p>
+              </div>
+            </div>
+
+            <div id="detail-prevention-section" class="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5">
+              <p class="text-xs tracking-[0.28em] text-emerald-300">🛡️ Prevention Suggestions</p>
+              <ul id="detail-prevention-list" class="mt-3 space-y-2">
+                <li class="text-sm text-slate-400">No suggestions available.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <section id="latency-card" class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4">
+          <div class="dashboard-panel-header">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Latency Panel</p>
+              <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Pipeline performance</h2>
+            </div>
+            <div class="dashboard-panel-header-actions">
+              <span id="latency-indicator" class="dashboard-chip border-emerald-400/25 bg-emerald-500/10 text-emerald-300">
+                HEALTHY
+              </span>
+              <button
+                type="button"
+                class="dashboard-collapsible-toggle"
+                aria-expanded="false"
+                data-collapsible-target="latency"
+              >
+                Expand
+              </button>
+            </div>
+          </div>
+          <p class="dashboard-collapsed-hint">Expand to view latency metrics and SLA utilization.</p>
+
+          <div id="dashboard-latency-body" class="dashboard-collapsible-body mt-3 hidden">
+            <div class="grid grid-cols-1 gap-3">
+              <div class="rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p id="latency-avg-label" class="text-xs uppercase tracking-[0.24em] text-slate-400">Avg Latency</p>
+                <p id="latency-avg" class="mt-2 text-2xl font-semibold text-white">0 ms</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p id="latency-last-label" class="text-xs uppercase tracking-[0.24em] text-slate-400">Last Pipeline Time</p>
+                <p id="latency-last" class="mt-2 text-2xl font-semibold text-white">0 ms</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-panelSoft p-4">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Within 15s</p>
+                <p id="latency-within" class="mt-2 text-lg font-semibold text-emerald-300">Yes</p>
+              </div>
+            </div>
+            <div class="mt-5">
+              <div class="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-500">
+                <span>SLA Utilization</span>
+                <span id="latency-progress-label">0%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-white/5">
+                <div id="latency-progress-bar" class="h-full w-0 rounded-full bg-emerald-400 transition-all duration-300"></div>
+              </div>
+              <p id="latency-note" class="mt-3 text-xs leading-5 text-slate-400">
+                Waiting for completed incident timings.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--control rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4">
+          <div class="dashboard-panel-header">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Control Panel</p>
+              <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Failure injection</h2>
+            </div>
+            <div class="dashboard-panel-header-actions">
+              <span id="inject-status-chip" class="dashboard-chip text-slate-300">
+                Ready
+              </span>
+              <button
+                type="button"
+                class="dashboard-collapsible-toggle"
+                aria-expanded="false"
+                data-collapsible-target="control"
+              >
+                Expand
+              </button>
+            </div>
+          </div>
+          <p class="dashboard-collapsed-hint">Expand to run controlled fault injections against services.</p>
+
+          <div id="dashboard-control-body" class="dashboard-collapsible-body mt-3 hidden">
+            <div class="grid gap-3">
+              <button
+                id="inject-db"
+                class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-200 transition duration-200 hover:border-red-300/50 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span class="inline-flex items-center gap-2">
+                  <span id="inject-db-spinner" class="hidden h-4 w-4 rounded-full border-2 border-red-200/20 border-t-red-200 animate-spin"></span>
+                  <span id="inject-db-label">Inject DB Failure</span>
+                </span>
+              </button>
+              <button
+                id="inject-cache"
+                class="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-200 transition duration-200 hover:border-amber-300/50 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span class="inline-flex items-center gap-2">
+                  <span id="inject-cache-spinner" class="hidden h-4 w-4 rounded-full border-2 border-amber-200/20 border-t-amber-200 animate-spin"></span>
+                  <span id="inject-cache-label">Inject Cache Failure</span>
+                </span>
+              </button>
+            </div>
+
+            <div id="inject-message" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+              Trigger a synthetic fault to observe propagation and RCA updates.
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+    </div>
+    </div>
+
+    <script>
+      function hostBracketed(hostname) {
+        if (hostname.includes(":")) {
+          return `[${hostname}]`;
+        }
+        return hostname;
+      }
+
+      function resolveApiBase() {
+        const params = new URLSearchParams(window.location.search);
+        const fromQuery = params.get("api");
+        if (fromQuery !== null) {
+          const trimmed = fromQuery.trim().replace(/\/+$/, "");
+          return trimmed || "";
+        }
+
+        const { protocol, hostname, port, origin } = window.location;
+        if (protocol === "file:") {
+          return "http://127.0.0.1:8000";
+        }
+
+        const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
+        const p = port || "";
+        if (p === "8000") {
+          return "";
+        }
+        if (localHosts.has(hostname) && p && p !== "8000") {
+          const h = hostBracketed(hostname);
+          return `${protocol}//${h}:8000`;
+        }
+        return origin;
+      }
+
+      const CONTROL_API_BASE = resolveApiBase();
+      const API_BASE = CONTROL_API_BASE;
+      const TRACE_API_BASE = CONTROL_API_BASE;
+      const INJECT_URL = `${CONTROL_API_BASE}/inject`;
+      const landingState = {
+        unlockReady: false,
+        dashboardVisible: false,
+        pollingStarted: false,
+      };
+      const state = {
+        rca: null,
+        timeline: null,
+        incidents: null,
+        latency: null,
+        liveEvents: null,
+        trace: null,
+        selectedIncident: null,
+        explainMode: false,
+        lastTimelineSignature: "",
+        errors: {
+          rca: false,
+          timeline: false,
+          incidents: false,
+          latency: false,
+          liveEvents: false,
+          trace: false,
+        },
+      };
+
+      function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = value;
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function serviceLabel(value) {
+        if (!value) {
+          return "Unknown Service";
+        }
+        return value
+          .replace(/-service/g, "")
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (match) => match.toUpperCase());
+      }
+
+      function formatPercent(value) {
+        const numeric = Number(value || 0);
+        return `${Math.round(numeric * 100)}%`;
+      }
+
+      function formatMs(value) {
+        const numeric = Number(value || 0);
+        return `${numeric.toFixed(numeric % 1 === 0 ? 0 : 2)} ms`;
+      }
+
+      function getLatencyViewModel(payload) {
+        const samples = Number(payload?.samples || 0);
+        const avgLatency = Number(payload?.avg_latency_ms || 0);
+        const lastPipelineTime = Number(payload?.last_pipeline_time_ms || 0);
+        const lastDetectionToRca = Number(payload?.last_detection_to_rca_time_ms || 0);
+        const activeIncidents = Number(payload?.active_incidents || 0);
+        const liveEvents = Array.isArray(state.liveEvents?.events) ? state.liveEvents.events : [];
+        const liveLatencies = liveEvents
+          .map((event) => Number(event?.latency || 0))
+          .filter((value) => Number.isFinite(value) && value > 0);
+        const liveAvgLatency = liveLatencies.length
+          ? liveLatencies.reduce((sum, value) => sum + value, 0) / liveLatencies.length
+          : 0;
+        const latestServiceLatency = liveLatencies.length ? liveLatencies[0] : 0;
+        const hasCompletedPipelineHistory = samples > 0 && (avgLatency > 0 || lastPipelineTime > 0);
+        const usingDetectionFallback = !hasCompletedPipelineHistory && lastDetectionToRca > 0;
+        const usingLiveFallback = !hasCompletedPipelineHistory && !usingDetectionFallback && liveEvents.length > 0;
+        const displayAvg = hasCompletedPipelineHistory
+          ? avgLatency
+          : usingDetectionFallback
+            ? lastDetectionToRca
+            : usingLiveFallback
+              ? liveAvgLatency
+              : 0;
+        const displayLast = lastPipelineTime > 0
+          ? lastPipelineTime
+          : usingDetectionFallback
+            ? lastDetectionToRca
+            : usingLiveFallback
+              ? latestServiceLatency
+              : 0;
+        const utilizationMs = displayLast || displayAvg;
+        const effectiveWithin15s = utilizationMs > 0 ? utilizationMs <= 15000 : Boolean(payload?.within_15s);
+        const note = hasCompletedPipelineHistory
+          ? `${samples} completed incident timing${samples === 1 ? "" : "s"} in the current history.`
+          : activeIncidents > 0 && usingDetectionFallback
+            ? `${activeIncidents} active incident${activeIncidents === 1 ? "" : "s"} in flight. Showing detection to RCA timing until remediation completes.`
+            : usingLiveFallback
+              ? `Showing live normalized-event latency from ${liveEvents.length} recent pipeline event${liveEvents.length === 1 ? "" : "s"}.`
+              : "Waiting for completed incident timings.";
+
+        return {
+          samples,
+          displayAvg,
+          displayLast,
+          effectiveWithin15s,
+          utilizationMs,
+          usingDetectionFallback,
+          usingLiveFallback,
+          note,
+        };
+      }
+
+      function getLiveEvents() {
+        return Array.isArray(state.liveEvents?.events) ? state.liveEvents.events : [];
+      }
+
+      function getLiveAnomalies() {
+        return getLiveEvents().filter((event) => String(event?.status || "OK") !== "OK");
+      }
+
+      function getFallbackRootCauseLabel() {
+        const anomalies = getLiveAnomalies();
+        if (!anomalies.length) {
+          return null;
+        }
+
+        const scored = new Map();
+        anomalies.forEach((event) => {
+          const service = event?.service || "unknown";
+          const severity = event?.status === "FAILED" ? 3 : event?.status === "DEGRADED" ? 2 : 1;
+          scored.set(service, (scored.get(service) || 0) + severity);
+        });
+
+        const [service] = [...scored.entries()].sort((a, b) => b[1] - a[1])[0] || [];
+        return service || anomalies[0]?.service || null;
+      }
+
+      function formatMlSignals(summary) {
+        const logSignal = Number(summary?.log_signal || 0);
+        const metricSignal = Number(summary?.metric_signal || 0);
+        const traceSignal = Number(summary?.trace_signal ?? summary?.trace ?? 0);
+
+        if (logSignal === 0 && metricSignal === 0 && traceSignal === 0) {
+          return "ML Signals: Logs • Metrics • Traces — no anomaly signal detected for this incident.";
+        }
+
+        return `ML Signals: Logs ${formatPercent(logSignal)} • Metrics ${formatPercent(metricSignal)} • Traces ${formatPercent(traceSignal)}`;
+      }
+
+      function formatClock(value) {
+        if (!value) {
+          return "--:--";
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return "--:--";
+        }
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function getFreezeActive() {
+        return Boolean(state.explainMode && state.selectedIncident);
+      }
+
+      function getDisplayedRCA() {
+        return getFreezeActive() ? state.selectedIncident.rca || {} : state.rca || {};
+      }
+
+      function getDisplayedTimeline() {
+        return getFreezeActive() ? { timeline: state.selectedIncident.timeline || [], window_seconds: state.selectedIncident.rca?.window_seconds || "--" } : state.timeline || {};
+      }
+
+      function hasDisplayError(key) {
+        if (getFreezeActive() && (key === "rca" || key === "timeline")) {
+          return false;
+        }
+        return hasDataError(key);
+      }
+
+      function getStatusBadgeMarkup(status, compact = false, extraClass = "") {
+        const normalized = String(status || "UNKNOWN").toUpperCase();
+        const classes =
+          normalized === "SUPPRESSED"
+            ? "border-slate-400/20 bg-slate-400/10 text-slate-300"
+            : normalized === "CONFIDENT" || normalized === "RESOLVED" || normalized === "SUCCESS"
+              ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+              : normalized === "FAILED" || normalized === "ERROR"
+                ? "border-red-400/20 bg-red-400/10 text-red-300"
+                : "border-yellow-400/20 bg-yellow-400/10 text-yellow-300";
+        const pad = compact ? "px-2.5 py-0.5" : "px-3 py-1";
+        return `<span class="rounded-full border ${pad} text-[10px] font-semibold tracking-[0.18em] ${classes} ${extraClass}">${escapeHtml(normalized)}</span>`;
+      }
+
+      function renderExplainControls() {
+        const explainButton = document.getElementById("explain-mode-toggle");
+        const backButton = document.getElementById("back-to-live");
+        if (explainButton) {
+          explainButton.className = `rounded-full border px-3 py-1 text-xs font-medium transition duration-200 ${
+            getFreezeActive()
+              ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
+              : "border-white/10 bg-white/5 text-slate-300 hover:border-amber-300/40 hover:text-amber-200"
+          }`;
+        }
+        if (backButton) {
+          backButton.classList.toggle("hidden", !getFreezeActive());
+        }
+      }
+
+      function getStatusIcon(status) {
+        const normalized = String(status || "").toUpperCase();
+        if (normalized === "SUCCESS" || normalized === "RESOLVED" || normalized === "CONFIDENT") return "✅";
+        if (normalized === "DEGRADED" || normalized === "UNCERTAIN" || normalized === "COOLDOWN_SKIPPED" || normalized === "PARTIAL_PROPAGATION" || normalized === "MULTI_CAUSE" || normalized === "SUPPRESSED") return "⚠️";
+        if (normalized === "FAILED" || normalized === "ERROR") return "❌";
+        return "🔵";
+      }
+
+      function parseContentDispositionFilename(headerValue) {
+        if (!headerValue) {
+          return null;
+        }
+        const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(headerValue);
+        if (star && star[1]) {
+          try {
+            return decodeURIComponent(star[1].trim().replace(/^"+|"+$/g, ""));
+          } catch {
+            return star[1].trim().replace(/^"+|"+$/g, "");
+          }
+        }
+        const plain = /filename="([^"]+)"/i.exec(headerValue) || /filename=([^;\s]+)/i.exec(headerValue);
+        if (plain && plain[1]) {
+          return plain[1].replace(/^"+|"+$/g, "");
+        }
+        return null;
+      }
+
+      async function downloadIncidentReport(incidentId) {
+        const id = incidentId != null ? String(incidentId).trim() : "";
+        if (!id || id === "Unknown") {
+          console.warn("downloadIncidentReport: missing or invalid incident id");
+          return;
+        }
+        try {
+          const url = `${API_BASE}/incidents/${encodeURIComponent(id)}/download`;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+          const fromHeader = parseContentDispositionFilename(response.headers.get("Content-Disposition"));
+          const filename = fromHeader || `incident_report_${id}.pdf`;
+          const blob = await response.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(a.href);
+        } catch (err) {
+          console.error("Download error:", err);
+        }
+      }
+
+      function renderIncidentDetail() {
+        const panel = document.getElementById("incident-detail-panel");
+        const listContainer = document.getElementById("incident-list");
+        const detail = state.selectedIncident;
+        if (!panel) {
+          return;
+        }
+        if (!detail) {
+          panel.classList.add("hidden");
+          if (listContainer) listContainer.classList.remove("hidden");
+          return;
+        }
+
+        if (listContainer) listContainer.classList.add("hidden");
+
+        const rca = detail.rca || {};
+        const remediation = detail.remediation || {};
+        const reasoning = Array.isArray(rca.reasoning) ? rca.reasoning : [];
+        const causalChain = Array.isArray(rca.causal_chain) ? rca.causal_chain : [];
+        const mlSummary = rca.ml_summary || {};
+        const rootCauses = Array.isArray(rca.primary_root_cause) ? rca.primary_root_cause : [];
+        let rootCauseLabel = rootCauses.length ? serviceLabel(rootCauses[0]) : (detail.root_cause ? serviceLabel(detail.root_cause) : "Unknown");
+        if (rootCauseLabel !== "Unknown" && rootCauseLabel.toLowerCase().includes("database")) {
+          rootCauseLabel = "Database Failure";
+        }
+        
+        const incidentId = detail.incident_id || rca.incident_id || "Unknown";
+        panel.classList.remove("hidden");
+        
+        const idStr = String(incidentId);
+        const idElement = document.getElementById("detail-incident-id");
+        if (idElement) {
+          idElement.textContent = `Incident ID: ${idStr}`;
+          idElement.title = idStr;
+        }
+        
+        setText("detail-root-cause", rootCauseLabel);
+        setText("detail-confidence", formatPercent(rca.confidence || detail.confidence || 0));
+        
+        const resolvedStatus = rca.status || detail.status || "LIVE";
+        let displayStatusText = resolvedStatus;
+        if (resolvedStatus === "MULTI_CAUSE") {
+          displayStatusText = rootCauseLabel !== "Unknown" ? "Cause Identified" : "Multiple Causes Detected";
+        }
+        
+        setText("detail-status-text", `${getStatusIcon(resolvedStatus)} ${displayStatusText}`);
+        setText("detail-outcome", detail.outcome || remediation.expected_recovery || remediation.reason || "Remediation in Progress");
+        setText("detail-confidence-explanation", rca.confidence_explanation || detail.confidence_reasoning || "No confidence explanation available.");
+        setText("detail-causal-chain", causalChain.length ? causalChain.join(" → ") : "No dependency chain recorded.");
+        setText(
+          "detail-ml-signals",
+          formatMlSignals(mlSummary)
+        );
+        setText(
+          "detail-action",
+          remediation.action
+            ? `${serviceLabel(remediation.target_service || rca.primary_root_cause?.[0])}: ${remediation.action} (${remediation.status || "pending"})`
+            : detail.remediation_action
+              ? `${detail.remediation_action} (${detail.remediation_status || "pending"})`
+              : "No remediation action recorded."
+        );
+
+        const statusBadge = document.getElementById("detail-status-badge");
+        if (statusBadge) {
+          let badgeText = resolvedStatus;
+          if (resolvedStatus === "MULTI_CAUSE") {
+            badgeText = rootCauseLabel !== "Unknown" ? "Cause Identified" : "Multiple Causes Identified";
+          }
+          statusBadge.textContent = `${getStatusIcon(resolvedStatus)} ${badgeText}`;
+          statusBadge.className = `rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.18em] ${
+            resolvedStatus === "SUPPRESSED"
+              ? "border-slate-400/20 bg-slate-400/10 text-slate-300"
+              : resolvedStatus === "CONFIDENT"
+                ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                : resolvedStatus === "FAILED"
+                  ? "border-red-400/20 bg-red-400/10 text-red-300"
+                  : "border-yellow-400/20 bg-yellow-400/10 text-yellow-300"
+          }`;
+        }
+
+        const rootCauseBox = document.getElementById("detail-root-cause-box");
+        if (rootCauseBox) {
+          const isConfident = resolvedStatus === "CONFIDENT";
+          rootCauseBox.className = `mt-4 rounded-2xl border p-4 ${
+            isConfident
+              ? "border-red-400/30 bg-red-500/15 shadow-redglow"
+              : "border-red-400/20 bg-red-500/10"
+          }`;
+        }
+
+        const reasoningContainer = document.getElementById("detail-reasoning");
+        if (reasoningContainer) {
+          reasoningContainer.innerHTML = reasoning.length
+            ? reasoning.map((item) => `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-300">${escapeHtml(item)}</span>`).join("")
+            : '<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-400">No reasoning recorded.</span>';
+        }
+
+        // Fetch and render prevention suggestions
+        const preventionList = document.getElementById("detail-prevention-list");
+        const preventionSection = document.getElementById("detail-prevention-section");
+        if (preventionList && preventionSection) {
+          const suggestions = Array.isArray(detail.prevention_suggestions) ? detail.prevention_suggestions : [];
+          if (suggestions.length) {
+            preventionList.innerHTML = suggestions
+              .map((s) => `<li class="flex items-start gap-2 text-sm text-slate-200"><span class="mt-0.5 text-emerald-400">✦</span><span>${escapeHtml(s)}</span></li>`)
+              .join("");
+          } else {
+            preventionList.innerHTML = '<li class="text-sm text-slate-400">No prevention suggestions available for this incident.</li>';
+          }
+        }
+
+      }
+
+      async function selectIncident(incidentId) {
+        if (!incidentId) {
+          return;
+        }
+        try {
+          const [detail, report] = await Promise.all([
+            fetchJSON(`${API_BASE}/incidents/${encodeURIComponent(incidentId)}`),
+            fetchJSON(`${API_BASE}/incidents/${encodeURIComponent(incidentId)}/report`).catch(() => ({}))
+          ]);
+          const rca = detail.rca || {};
+          const remediation = detail.remediation || {};
+          state.selectedIncident = {
+            incident_id: detail.incident_id || incidentId,
+            timestamp: rca.evaluated_at || detail.created_at,
+            status: rca.status,
+            outcome:
+              remediation.details?.error
+              || remediation.expected_recovery
+              || remediation.reason
+              || (rca.status === "SUPPRESSED" ? (rca.reason || "Suppressed due to low confidence") : "Awaiting remediation outcome"),
+            remediation_action: remediation.action,
+            remediation_status: remediation.status,
+            rca,
+            timeline: Array.isArray(detail.timeline) ? detail.timeline : [],
+            remediation,
+            prevention_suggestions: report.prevention_suggestions || []
+          };
+          state.explainMode = true;
+          renderAll();
+        } catch (err) {
+          console.error("Fetch error:", err);
+        }
+      }
+
+      function enterExplainModeFromLive() {
+        if (!state.selectedIncident) {
+          state.selectedIncident = {
+            incident_id: state.rca?.incident_id || "live-view",
+            timestamp: state.rca?.evaluated_at || new Date().toISOString(),
+            status: state.rca?.status || "LIVE",
+            outcome: "Frozen from live RCA feed.",
+            remediation_action: null,
+            remediation_status: null,
+            rca: JSON.parse(JSON.stringify(state.rca || {})),
+            timeline: JSON.parse(JSON.stringify(state.timeline?.timeline || [])),
+            remediation: {},
+          };
+        }
+        state.explainMode = true;
+        renderAll();
+      }
+
+      function backToLive() {
+        state.selectedIncident = null;
+        state.explainMode = false;
+        renderAll();
+      }
+
+      function closeIncidentPopup() {
+        state.selectedIncident = null;
+        state.explainMode = false;
+        renderAll();
+      }
+
+      function initializeWidgetHoverTracking() {
+        const widgets = document.querySelectorAll(".dashboard-widget");
+        widgets.forEach((widget) => {
+          if (widget.dataset.glowBound === "true") {
+            return;
+          }
+
+          const updateGlow = (event) => {
+            const rect = widget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const distances = {
+              top: y,
+              right: rect.width - x,
+              bottom: rect.height - y,
+              left: x,
+            };
+            const nearestEdge = Object.entries(distances).sort((a, b) => a[1] - b[1])[0][0];
+            const edgeDirectionMap = {
+              top: "to bottom",
+              right: "to left",
+              bottom: "to top",
+              left: "to right",
+            };
+
+            widget.style.setProperty("--mx", `${x}px`);
+            widget.style.setProperty("--my", `${y}px`);
+            widget.style.setProperty("--edge-direction", edgeDirectionMap[nearestEdge]);
+            widget.style.setProperty("--widget-glow-opacity", "1");
+            widget.classList.add("is-hovered");
+          };
+
+          const clearGlow = () => {
+            widget.style.setProperty("--widget-glow-opacity", "0");
+            widget.classList.remove("is-hovered");
+          };
+
+          widget.addEventListener("pointerenter", updateGlow);
+          widget.addEventListener("pointermove", updateGlow);
+          widget.addEventListener("pointerleave", clearGlow);
+          widget.dataset.glowBound = "true";
+        });
+      }
+
+      function getMlInsightsSignature() {
+        const rca = getDisplayedRCA();
+        const ev = getLiveEvents().slice(0, 14);
+        return JSON.stringify({
+          ml: rca.ml_summary,
+          ev: ev.map((e) => [e.timestamp, e.latency, e.status, e.event_type, e.trace_id]),
+        });
+      }
+
+      function drawMlInsightsChart() {
+        const host = document.getElementById("ml-insights-chart");
+        if (!host) {
+          return;
+        }
+        const rca = getDisplayedRCA();
+        const events = getLiveEvents().slice(0, 14);
+        const ml = rca.ml_summary || {};
+        let series = events.map((e) => Math.max(0, Number(e.latency) || 0));
+        if (series.length < 2) {
+          series = [
+            Math.max(8, Number(ml.log_signal || 0) * 120 + 8),
+            Math.max(8, Number(ml.metric_signal || 0) * 120 + 12),
+            Math.max(8, Number(ml.trace_signal || 0) * 120 + 6),
+            24,
+          ];
+        }
+        const n = series.length;
+        const maxY = Math.max(...series, 1);
+        const W = 420;
+        const H = 176;
+        const padL = 44;
+        const padR = 12;
+        const padT = 16;
+        const padB = 28;
+        const iw = W - padL - padR;
+        const ih = H - padT - padB;
+        const pts = series.map((lat, i) => {
+          const x = n === 1 ? padL + iw / 2 : padL + (i / (n - 1)) * iw;
+          const y = padT + ih - (lat / maxY) * ih;
+          return { x, y, lat, ev: events[i] };
+        });
+        const pointsAttr = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+        let markers = "";
+        pts.forEach((p) => {
+          const ev = p.ev;
+          if (!ev) {
+            return;
+          }
+          const isErr =
+            String(ev.event_type || "").toUpperCase() === "ERROR" || String(ev.status || "").toUpperCase() === "FAILED";
+          if (isErr) {
+            markers += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.8" fill="#f87171" stroke="#fecaca" stroke-width="0.6"/>`;
+          }
+          if (ev.trace_id) {
+            const ty = Math.min(H - 10, p.y + 14);
+            markers += `<rect x="${(p.x - 3.5).toFixed(1)}" y="${(ty - 3.5).toFixed(1)}" width="7" height="7" transform="rotate(45 ${p.x.toFixed(1)} ${ty.toFixed(1)})" fill="rgba(34,211,238,0.22)" stroke="rgba(34,211,238,0.95)" stroke-width="0.65"/>`;
+          }
+        });
+        let grid = "";
+        for (let g = 0; g <= 4; g += 1) {
+          const gy = padT + (g / 4) * ih;
+          grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}" stroke="rgba(148,163,184,0.1)" stroke-width="0.5"/>`;
+        }
+        const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ML signal chart">
+          ${grid}
+          <text x="${padL}" y="${padT - 4}" fill="rgba(148,163,184,0.85)" font-size="9" font-family="ui-sans-serif,system-ui,sans-serif">Latency trend</text>
+          <text x="${padL}" y="${H - 8}" fill="rgba(148,163,184,0.75)" font-size="8" font-family="ui-sans-serif,system-ui,sans-serif">t →</text>
+          <text x="${W - padR - 4}" y="${padT - 4}" text-anchor="end" fill="rgba(148,163,184,0.75)" font-size="8" font-family="ui-sans-serif,system-ui,sans-serif">max ${Math.round(maxY)}ms</text>
+          <polyline fill="none" stroke="rgba(251,191,36,0.92)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pointsAttr}"/>
+          ${markers}
+        </svg>`;
+        host.innerHTML = svg;
+        host.dataset.rendered = "1";
+      }
+
+      function maybeRenderMlInsightsChart() {
+        const panel = document.getElementById("ml-insights-panel");
+        const host = document.getElementById("ml-insights-chart");
+        if (!panel || !host || panel.dataset.mlVisible !== "1") {
+          return;
+        }
+        const sig = getMlInsightsSignature();
+        if (sig === host.dataset.lastSig) {
+          return;
+        }
+        host.dataset.lastSig = sig;
+        drawMlInsightsChart();
+      }
+
+      function initMlInsightsObserver() {
+        const panel = document.getElementById("ml-insights-panel");
+        if (!panel || panel.dataset.mlIo === "1") {
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                panel.dataset.mlVisible = "1";
+                const host = document.getElementById("ml-insights-chart");
+                if (host) {
+                  host.dataset.lastSig = "";
+                }
+                maybeRenderMlInsightsChart();
+              }
+            });
+          },
+          { threshold: 0.12, rootMargin: "0px 0px 120px 0px" }
+        );
+        io.observe(panel);
+        panel.dataset.mlIo = "1";
+      }
+
+      function initDashboardCollapsibles() {
+        document.querySelectorAll(".dashboard-container .dashboard-collapsible-toggle").forEach((btn) => {
+          if (btn.dataset.collapsibleBound === "true") {
+            return;
+          }
+          btn.dataset.collapsibleBound = "true";
+          btn.addEventListener("click", () => {
+            const panel = btn.closest(".dashboard-collapsible");
+            const body = panel?.querySelector(".dashboard-collapsible-body");
+            if (!body) {
+              return;
+            }
+            body.classList.toggle("hidden");
+            const nowOpen = !body.classList.contains("hidden");
+            if (panel) {
+              panel.classList.toggle("dashboard-section-expanded", nowOpen);
+            }
+            btn.setAttribute("aria-expanded", String(nowOpen));
+            btn.textContent = nowOpen ? "Collapse" : "Expand";
+          });
+        });
+      }
+
+      function initializeLandingExperience() {
+        const revealNodes = document.querySelectorAll(".landing-copy, .story-card");
+        const heroCopy = document.getElementById("landing-hero-copy");
+        const sideCopy = document.getElementById("landing-side-copy");
+        const storyCards = document.querySelectorAll(".story-card");
+        const parallaxSignal = document.getElementById("parallax-word-signal");
+        const parallaxObserve = document.getElementById("parallax-word-observe");
+        const parallaxResolve = document.getElementById("parallax-word-resolve");
+        const progressBar = document.getElementById("tracker-progress");
+        const trackerCore = document.getElementById("tracker-core");
+        const landingPage = document.getElementById("landing-page");
+        const finishSection = document.getElementById("landing-finish");
+        const unlockPrompt = document.getElementById("unlock-prompt");
+        const dashboardShell = document.getElementById("dashboard-shell");
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+              }
+            });
+          },
+          { threshold: 0.28 }
+        );
+
+        revealNodes.forEach((node) => observer.observe(node));
+
+        const syncLandingProgress = () => {
+          if (!landingPage || landingState.dashboardVisible) {
+            return;
+          }
+
+          const maxScroll = Math.max(1, landingPage.offsetHeight - window.innerHeight);
+          const currentScroll = Math.max(0, Math.min(window.scrollY, maxScroll));
+          const progress = currentScroll / maxScroll;
+
+          if (progressBar) {
+            progressBar.style.height = `${Math.max(12, progress * window.innerHeight)}px`;
+          }
+          if (trackerCore) {
+            trackerCore.style.top = `${12 + progress * 70}vh`;
+          }
+
+          if (heroCopy) {
+            heroCopy.style.setProperty("--copy-shift-x", `${-34 * progress}px`);
+            heroCopy.style.setProperty("--copy-shift-y", `${-120 * progress}px`);
+          }
+
+          if (sideCopy) {
+            sideCopy.style.setProperty("--copy-shift-x", `${42 * progress}px`);
+            sideCopy.style.setProperty("--copy-shift-y", `${-94 * progress}px`);
+          }
+
+          storyCards.forEach((card, index) => {
+            const direction = card.dataset.side === "right" ? 1 : -1;
+            const depth = index + 1;
+            card.style.setProperty("--story-shift-x", `${direction * (18 + progress * 34 * depth)}px`);
+            card.style.setProperty("--story-shift-y", `${-46 * progress * depth}px`);
+          });
+
+          if (parallaxSignal) {
+            parallaxSignal.style.setProperty("--word-shift-x", `${-90 * progress}px`);
+            parallaxSignal.style.setProperty("--word-shift-y", `${-160 * progress}px`);
+          }
+
+          if (parallaxObserve) {
+            parallaxObserve.style.setProperty("--word-shift-x", `${120 * progress}px`);
+            parallaxObserve.style.setProperty("--word-shift-y", `${-110 * progress}px`);
+          }
+
+          if (parallaxResolve) {
+            parallaxResolve.style.setProperty("--word-shift-x", `${-70 * progress}px`);
+            parallaxResolve.style.setProperty("--word-shift-y", `${-210 * progress}px`);
+          }
+
+          const finishRect = finishSection?.getBoundingClientRect();
+          const ready = Boolean(finishRect && finishRect.top <= window.innerHeight * 0.72);
+          landingState.unlockReady = ready;
+          unlockPrompt?.classList.toggle("is-ready", ready);
+        };
+
+        const showDashboard = () => {
+          if (!landingState.unlockReady || landingState.dashboardVisible) {
+            return;
+          }
+
+          landingState.dashboardVisible = true;
+          landingPage?.classList.add("hidden");
+          dashboardShell?.classList.remove("is-hidden");
+          dashboardShell?.classList.add("is-visible");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          initializeWidgetHoverTracking();
+          initDashboardCollapsibles();
+          initMlInsightsObserver();
+          startDashboardPolling();
+        };
+
+        window.addEventListener("scroll", syncLandingProgress, { passive: true });
+        window.addEventListener("resize", syncLandingProgress);
+        document.addEventListener("keydown", showDashboard);
+        syncLandingProgress();
+      }
+
+      function startDashboardPolling() {
+        if (landingState.pollingStarted) {
+          return;
+        }
+        landingState.pollingStarted = true;
+        refreshData();
+        setInterval(refreshData, 2000);
+      }
+
+      function getStatusTheme(status) {
+        if (status === "SUPPRESSED") {
+          return {
+            chip: "border-slate-400/30 bg-slate-400/10 text-slate-300",
+            dot: "bg-slate-300 shadow-[0_0_18px_rgba(203,213,225,0.45)]",
+          };
+        }
+        if (status === "CONFIDENT" || status === "HEALTHY") {
+          return {
+            chip: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+            dot: "bg-emerald-400 shadow-[0_0_18px_rgba(74,222,128,0.7)]",
+          };
+        }
+        if (status === "FAILED" || status === "ERROR") {
+          return {
+            chip: "border-red-400/30 bg-red-400/10 text-red-300",
+            dot: "bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.7)]",
+          };
+        }
+        return {
+          chip: "border-yellow-400/30 bg-yellow-400/10 text-yellow-300",
+          dot: "bg-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.7)]",
+        };
+      }
+
+      function setClasses(element, classes) {
+        element.className = classes;
+      }
+
+      function hasDataError(key) {
+        return Boolean(state.errors && state.errors[key]);
+      }
+
+      function updateHeaderStaleNote() {
+        const hasAnyError = Object.values(state.errors).some(Boolean);
+        const existing = document.getElementById("stale-data-note");
+        const refreshCard = document.getElementById("last-refresh")?.parentElement?.parentElement;
+        if (!refreshCard) {
+          return;
+        }
+
+        if (!hasAnyError) {
+          if (existing) {
+            existing.remove();
+          }
+          return;
+        }
+
+        if (existing) {
+          existing.textContent = "Backend connection issue";
+          return;
+        }
+
+        const note = document.createElement("p");
+        note.id = "stale-data-note";
+        note.className = "mt-2 text-xs font-medium text-red-400";
+        note.textContent = "Backend connection issue";
+        refreshCard.appendChild(note);
+      }
+
+      function renderSummary() {
+        const rca = state.rca || {};
+        const latency = state.latency || {};
+        const latencyView = getLatencyViewModel(latency);
+        const rootCause = Array.isArray(rca.primary_root_cause) ? rca.primary_root_cause : [];
+        const affected = Array.isArray(rca.affected_services) ? rca.affected_services : [];
+        const isHealthy = !rootCause.length && rca.incident_id == null && !hasDataError("rca");
+        let statusLabel = isHealthy ? "Healthy" : rca.status || "Uncertain";
+        if (statusLabel === "MULTI_CAUSE") {
+          statusLabel = rootCause.length ? "CAUSE_IDENTIFIED" : "MULTI_CAUSE";
+        }
+        const theme = getStatusTheme(isHealthy ? "HEALTHY" : rca.status);
+        const dot = document.getElementById("summary-status-dot");
+
+        setText("summary-status", statusLabel);
+        setText(
+          "summary-status-note",
+          hasDataError("rca")
+            ? "Failed to load data"
+            : isHealthy
+            ? "No confident root cause detected in the active window."
+            : rca.status === "SUPPRESSED"
+              ? rca.reason || "Low confidence"
+            : rootCause.length
+              ? `${serviceLabel(rootCause[0])} is currently the leading root cause.`
+              : "An RCA signal exists, but confidence is still building."
+        );
+        const incidentIdEl = document.getElementById("summary-incident");
+        if (incidentIdEl) {
+          const idText = rca.incident_id || "None";
+          incidentIdEl.textContent = idText;
+          incidentIdEl.title = idText && idText !== "None" ? String(idText) : "";
+        }
+        setText(
+          "summary-incident-note",
+          rca.evaluated_at ? `Evaluated at ${new Date(rca.evaluated_at).toLocaleTimeString()}` : "No active incident detected."
+        );
+        setText("summary-affected", String(affected.length));
+        setText(
+          "summary-services-list",
+          affected.length ? affected.map(serviceLabel).join(", ") : "No downstream impact."
+        );
+
+        if (dot) {
+          setClasses(dot, `h-3 w-3 rounded-full ${theme.dot}`);
+        }
+      }
+
+      function renderRCA() {
+        const rca = getDisplayedRCA();
+        const fallbackRootService = getFallbackRootCauseLabel();
+        const rootCause = Array.isArray(rca.primary_root_cause) && rca.primary_root_cause.length
+          ? rca.primary_root_cause.map(serviceLabel).join(", ")
+          : fallbackRootService
+            ? `${serviceLabel(fallbackRootService)} (live anomaly)`
+          : hasDisplayError("rca")
+            ? "Failed to load data"
+            : "Waiting for events...";
+        const alternatives = Array.isArray(rca.alternative_causes) && rca.alternative_causes.length
+          ? rca.alternative_causes
+          : getLiveAnomalies()
+              .map((event) => event.service)
+              .filter(Boolean)
+              .filter((service, index, list) => list.indexOf(service) === index && service !== fallbackRootService)
+              .slice(0, 4);
+        const confidenceBadge = document.getElementById("rca-confidence-badge");
+        const confidenceBar = document.getElementById("rca-confidence-bar");
+        const confidence = Number(rca.confidence || 0);
+        const confidenceTheme = rca.status === "SUPPRESSED"
+          ? "SUPPRESSED"
+          : confidence >= 0.75 ? "CONFIDENT" : confidence >= 0.4 ? "UNCERTAIN" : "FAILED";
+        const rootBox = document.getElementById("rca-root-box");
+        const hasRootCause = Boolean(rca.primary_root_cause && rca.primary_root_cause.length);
+
+        setText("rca-root-cause", rootCause);
+        setText(
+          "rca-confidence-explanation",
+          hasDisplayError("rca")
+            ? "Failed to load data"
+            : rca.status === "SUPPRESSED"
+              ? `${rca.reason || "Low confidence"}${rca.confidence ? ` (${formatPercent(rca.confidence)} below 60%)` : ""}`
+            : !hasRootCause && fallbackRootService
+              ? "Live anomalies are flowing through the backend. Deep dependency analysis has not formed a confident chain yet, so the dashboard surfaces the strongest current service signal (upstream/downstream context builds as events arrive)."
+            : rca.confidence_explanation || "Waiting for events..."
+        );
+        setText(
+          "rca-ml-signals-inline",
+          hasDisplayError("rca") ? "Failed to load ML signals." : formatMlSignals(rca.ml_summary || {})
+        );
+
+        if (confidenceBadge) {
+          const theme = getStatusTheme(confidenceTheme);
+          setClasses(confidenceBadge, `rounded-full border px-3 py-1 text-xs font-medium ${theme.chip}`);
+          confidenceBadge.textContent = formatPercent(confidence);
+        }
+        if (confidenceBar) {
+          const width = `${Math.max(0, Math.min(100, Math.round(confidence * 100)))}%`;
+          confidenceBar.style.width = width;
+          confidenceBar.className = `h-full rounded-full transition-all duration-300 ${
+            rca.status === "SUPPRESSED" ? "bg-slate-400" : confidence >= 0.75 ? "bg-emerald-400" : confidence >= 0.4 ? "bg-yellow-400" : "bg-red-400"
+          }`;
+        }
+        if (rootBox) {
+          rootBox.className = `mt-6 rounded-2xl border p-5 text-left ${
+            hasRootCause && rca.status !== "SUPPRESSED"
+              ? "animate-pulse "
+              : ""
+          }${
+            rca.status === "SUPPRESSED"
+              ? "border-slate-400/20 bg-slate-400/10 shadow-glow"
+              : hasRootCause
+              ? "border-red-400/30 bg-red-500/10 shadow-redglow"
+              : hasDisplayError("rca")
+                ? "border-red-400/20 bg-white/[0.04] shadow-glow"
+                : "border-white/10 bg-white/[0.04] shadow-glow"
+          }`;
+        }
+        const rootTitle = document.getElementById("rca-root-cause");
+        if (rootTitle) {
+          rootTitle.className = `mt-2 text-3xl font-semibold ${
+            rca.status === "SUPPRESSED" ? "text-slate-200" : hasRootCause ? "text-red-200" : hasDisplayError("rca") ? "text-red-400" : "text-slate-200"
+          }`;
+        }
+
+        const container = document.getElementById("rca-alternatives");
+        if (!container) {
+          return;
+        }
+
+        if (!alternatives.length) {
+          container.innerHTML =
+            hasDataError("rca")
+            && !getFreezeActive()
+              ? '<span class="rounded-full border border-red-400/20 bg-red-400/10 px-3 py-1 text-sm text-red-400">Failed to load data</span>'
+              : '<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-400 animate-pulse">Waiting for events...</span>';
+          renderIncidentDetail();
+          renderExplainControls();
+          return;
+        }
+
+        container.innerHTML = alternatives
+          .map((entry) => {
+            const label = typeof entry === "string" ? entry : entry.service || entry.cause || "Unknown";
+            return `<span class="rounded-full border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 text-sm text-yellow-200">${escapeHtml(serviceLabel(label))}</span>`;
+          })
+          .join("");
+        renderIncidentDetail();
+        renderExplainControls();
+      }
+
+      function renderTimeline() {
+        const payload = getDisplayedTimeline();
+        const items = Array.isArray(payload.timeline) ? payload.timeline : [];
+        const signature = JSON.stringify(items.map((item) => `${item.time || ""}-${item.service || ""}-${item.message || ""}`));
+        const container = document.getElementById("timeline-list");
+        if (!container) {
+          return;
+        }
+        const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 50;
+        const shouldScroll = signature !== state.lastTimelineSignature && items.length > 0 && isNearBottom;
+        state.lastTimelineSignature = signature;
+        setText("timeline-window", `Window: ${payload.window_seconds || "--"}s`);
+
+        if (!items.length) {
+          const anomalies = getLiveAnomalies().slice(0, 12);
+          if (anomalies.length) {
+            container.innerHTML = anomalies
+              .map((item) => `
+                <div class="group relative rounded-2xl border border-white/10 bg-panelSoft p-4 pl-8 transition duration-200 hover:scale-[1.01] hover:border-white/20 hover:bg-white/[0.06]">
+                  <div class="absolute bottom-0 left-3 top-0 w-px bg-white/10"></div>
+                  <span class="absolute left-[7px] top-5 h-3 w-3 rounded-full ${item.status === "FAILED" ? "bg-red-400 shadow-[0_0_14px_rgba(248,113,113,0.8)]" : "bg-yellow-400 shadow-[0_0_14px_rgba(250,204,21,0.8)]"}"></span>
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-base font-semibold text-white">${escapeHtml(serviceLabel(item.service))}</h3>
+                        <span class="rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.18em] ${item.status === "FAILED" ? "border-red-400/30 bg-red-400/10 text-red-300" : "border-amber-400/30 bg-amber-400/10 text-amber-300"}">
+                          LIVE
+                        </span>
+                      </div>
+                      <p class="mt-2 text-sm leading-6 text-slate-300">${escapeHtml(`${item.event_type || "EVENT"} • ${item.status || "UNKNOWN"} • ${formatMs(item.latency || 0)}`)}</p>
+                    </div>
+                    <div class="shrink-0 text-right">
+                      <p class="text-xs uppercase tracking-[0.24em] text-slate-500">${escapeHtml(item.status || "UNKNOWN")}</p>
+                      <p class="mt-2 text-sm text-slate-300">${escapeHtml(item.timestamp || "--")}</p>
+                    </div>
+                  </div>
+                </div>
+              `)
+              .join("");
+            return;
+          }
+          container.innerHTML =
+            hasDisplayError("timeline")
+              ? '<div class="rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-400">Failed to load data</div>'
+              : '<div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400 animate-pulse">Waiting for events...</div>';
+          return;
+        }
+
+        container.innerHTML = items
+          .map((item) => {
+            const isRoot = Boolean(item.root_cause) || item.impact_level === "ROOT";
+            const badgeClasses = isRoot
+              ? "border-red-400/30 bg-red-400/10 text-red-300"
+              : "border-amber-400/30 bg-amber-400/10 text-amber-300";
+            const badgeLabel = isRoot ? "ROOT" : "DOWNSTREAM";
+            const severity = item.severity || "UNKNOWN";
+            const shell = isRoot
+              ? "dependency-chain-node--root group relative rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4 pl-8 shadow-[0_0_24px_rgba(248,113,113,0.06)] transition duration-200 hover:border-red-300/45 hover:bg-red-500/10"
+              : "dependency-chain-node--downstream group relative rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 pl-8 opacity-[0.92] transition duration-200 hover:border-white/15 hover:bg-white/[0.05]";
+            const titleCls = isRoot ? "text-base font-semibold text-white" : "text-base font-medium text-slate-300";
+            const msgCls = isRoot ? "text-sm leading-6 text-slate-200" : "text-sm leading-6 text-slate-400";
+            return `
+              <div class="${shell}">
+                <div class="absolute bottom-0 left-3 top-0 w-px ${isRoot ? "bg-red-400/25" : "bg-white/10"}"></div>
+                <span class="absolute left-[7px] top-5 h-3 w-3 rounded-full ${isRoot ? "bg-red-400 shadow-[0_0_14px_rgba(248,113,113,0.8)]" : "bg-amber-400/80 shadow-[0_0_12px_rgba(250,204,21,0.45)]"}"></span>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="${titleCls}">${escapeHtml(serviceLabel(item.service))}</h3>
+                      <span class="rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.18em] ${badgeClasses}">
+                        ${badgeLabel}
+                      </span>
+                    </div>
+                    <p class="mt-2 ${msgCls}">${escapeHtml(item.message || "No event message")}</p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <p class="text-xs uppercase tracking-[0.24em] text-slate-500">${escapeHtml(severity)}</p>
+                    <p class="mt-2 text-sm text-slate-400">${escapeHtml(item.time || "--")}</p>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+        if (shouldScroll) {
+          container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+        }
+      }
+
+      function renderIncidents() {
+        const payload = state.incidents || {};
+        const incidents = Array.isArray(payload.incidents) ? payload.incidents.slice(0, 5) : [];
+        setText("incident-count", `${incidents.length} total`);
+        const container = document.getElementById("incident-list");
+        if (!container) {
+          return;
+        }
+
+        if (!incidents.length) {
+          const anomalies = getLiveAnomalies().slice(0, 5);
+          if (anomalies.length) {
+            setText("incident-count", `${anomalies.length} live`);
+            container.innerHTML = anomalies
+              .map(
+                (event) => `
+                  <div class="dashboard-incident-item w-full p-3.5">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-[11px] font-medium tabular-nums text-slate-500">${escapeHtml(formatClock(event.timestamp))}</span>
+                          ${getStatusBadgeMarkup(event.status || "UNKNOWN", true, "dashboard-incident-status shrink-0")}
+                        </div>
+                        <p class="mt-1.5 text-sm font-semibold leading-snug text-slate-100">${escapeHtml(serviceLabel(event.service))}</p>
+                        <p class="mt-1 text-xs text-slate-500">${escapeHtml(`${event.event_type || "EVENT"} • ${formatMs(event.latency || 0)} • trace ${event.trace_id || "n/a"}`)}</p>
+                      </div>
+                    </div>
+                  </div>
+                `
+              )
+              .join("");
+            return;
+          }
+          container.innerHTML =
+            hasDataError("incidents")
+              ? '<div class="rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-400">Failed to load data</div>'
+              : '<div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400 animate-pulse">Waiting for events...</div>';
+          return;
+        }
+
+        const resolvedStatusLabel = (incident) => {
+          if (incident.remediation_status === "success") return "RESOLVED";
+          return incident.status || incident.remediation_status || "UNKNOWN";
+        };
+
+        container.innerHTML = incidents
+          .map(
+            (incident) => `
+              <div
+                class="dashboard-incident-item w-full p-3.5 ${state.selectedIncident?.incident_id === incident.incident_id ? "is-selected" : ""}"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[11px] font-medium tabular-nums text-slate-500">${escapeHtml(formatClock(incident.timestamp))}</span>
+                      ${getStatusBadgeMarkup(resolvedStatusLabel(incident), true, "dashboard-incident-status shrink-0")}
+                    </div>
+                    <p class="mt-1.5 text-sm font-semibold leading-snug text-slate-100">${escapeHtml(serviceLabel(incident.root_cause))}</p>
+                    <p class="mt-1 text-xs leading-snug text-slate-500 line-clamp-2">${escapeHtml(incident.outcome || "No outcome yet")}</p>
+                  </div>
+                </div>
+                <div class="dashboard-incident-actions">
+                  <button
+                    type="button"
+                    data-incident-id="${escapeHtml(incident.incident_id || "")}"
+                    class="incident-view-btn border border-white/10 bg-white/[0.04] text-slate-200 transition hover:border-amber-400/35 hover:bg-amber-500/10 hover:text-amber-100"
+                  >
+                    Details
+                  </button>
+                  <button
+                    type="button"
+                    data-download-id="${escapeHtml(incident.incident_id || "")}"
+                    class="incident-download-btn border border-white/10 bg-white/[0.04] text-slate-200 transition hover:border-cyan-400/35 hover:bg-cyan-500/10 hover:text-cyan-100"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+            `
+          )
+          .join("");
+
+        container.querySelectorAll(".incident-view-btn").forEach((button) => {
+          button.addEventListener("click", () => selectIncident(button.dataset.incidentId));
+        });
+        container.querySelectorAll(".incident-download-btn").forEach((button) => {
+          button.addEventListener("click", (e) => {
+            e.stopPropagation();
+            downloadIncidentReport(button.dataset.downloadId);
+          });
+        });
+      }
+
+      function renderLatency() {
+        const payload = state.latency || {};
+        const view = getLatencyViewModel(payload);
+        const within = view.effectiveWithin15s;
+        const progress = Math.max(0, Math.min(100, Math.round((view.utilizationMs / 15000) * 100)));
+        const indicator = document.getElementById("latency-indicator");
+        const progressBar = document.getElementById("latency-progress-bar");
+        const progressLabel = document.getElementById("latency-progress-label");
+        const avgLabel = document.getElementById("latency-avg-label");
+        const lastLabel = document.getElementById("latency-last-label");
+        const note = document.getElementById("latency-note");
+        const card = document.getElementById("latency-card");
+        if (indicator) {
+          setClasses(
+            indicator,
+            `dashboard-chip ${
+              hasDataError("latency")
+                ? "border-red-400/35 bg-red-500/10 text-red-300"
+                : within
+                ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300"
+                : "border-amber-400/35 bg-amber-500/10 text-amber-200"
+            }`
+          );
+          indicator.textContent = hasDataError("latency") ? "ERROR" : within ? "HEALTHY" : "ATTENTION";
+        }
+
+        if (avgLabel) {
+          avgLabel.textContent = view.usingDetectionFallback ? "Latest RCA Time" : "Avg Latency";
+        }
+        if (lastLabel) {
+          lastLabel.textContent = view.usingDetectionFallback ? "Detection to RCA" : "Last Pipeline Time";
+        }
+        setText("latency-avg", formatMs(view.displayAvg));
+        setText("latency-last", formatMs(view.displayLast));
+        setText("latency-within", hasDataError("latency") ? "Failed to load data" : within ? "Yes" : "No");
+        document.getElementById("latency-within").className = `mt-2 text-lg font-semibold ${
+          hasDataError("latency") ? "text-red-400" : within ? "text-emerald-300" : "text-red-300"
+        }`;
+        if (progressBar) {
+          progressBar.style.width = `${progress}%`;
+          progressBar.className = `h-full rounded-full transition-all duration-300 ${
+            hasDataError("latency") ? "bg-red-400" : within ? "bg-emerald-400" : "bg-red-400"
+          }`;
+        }
+        if (progressLabel) {
+          progressLabel.textContent = `${progress}%`;
+        }
+        if (note) {
+          note.textContent = hasDataError("latency") ? "Failed to load latency telemetry." : view.note;
+          note.className = `mt-3 text-xs leading-5 ${hasDataError("latency") ? "text-red-400" : "text-slate-400"}`;
+        }
+        if (card) {
+          card.className = `dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 ${
+            hasDataError("latency")
+              ? "border-red-400/25 shadow-redglow"
+              : within
+                ? "border-emerald-400/25 shadow-greenglow"
+                : "border-amber-400/25 shadow-[0_0_24px_rgba(245,158,11,0.12)]"
+          }`;
+        }
+      }
+
+      function renderTrace() {
+        const payload = state.trace || {};
+        const path = Array.isArray(payload.path) ? payload.path : [];
+        const timestamps = Array.isArray(payload.timestamps) ? payload.timestamps : [];
+        const status = document.getElementById("trace-status");
+        const container = document.getElementById("trace-chain");
+
+        if (!status || !container) {
+          return;
+        }
+
+        if (hasDataError("trace")) {
+          status.className = "mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-300";
+          status.textContent = "Failed to load trace view.";
+          container.innerHTML =
+            '<div class="rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-300">Trace visualization unavailable.</div>';
+          return;
+        }
+
+        if (!payload.trace_id) {
+          status.className = "mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400";
+          status.textContent = "Enter a trace ID to visualize the service chain.";
+          container.innerHTML =
+            '<div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Trace nodes will appear here.</div>';
+          return;
+        }
+
+        if (!path.length) {
+          status.className = "mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200";
+          status.textContent = `No request journey found for trace ${payload.trace_id}.`;
+          container.innerHTML =
+            '<div class="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200">This trace ID is validly searched, but no matching propagated service path was found in the current event window.</div>';
+          return;
+        }
+
+        status.className = "mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-200";
+        status.textContent = `Trace ${payload.trace_id} crossed ${path.length} service${path.length === 1 ? "" : "s"}.`;
+
+        container.innerHTML = path
+          .map((service, index) => {
+            const timestamp = timestamps[index] || "--";
+            const node = `
+              <div class="min-w-[12rem] rounded-2xl border border-white/10 bg-panelSoft px-4 py-4 text-center shadow-glow">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Hop ${index + 1}</p>
+                <h3 class="mt-2 text-base font-semibold text-white">${escapeHtml(serviceLabel(service))}</h3>
+                <p class="mt-2 text-xs text-slate-400">${escapeHtml(timestamp)}</p>
+              </div>
+            `;
+            if (index === path.length - 1) {
+              return node;
+            }
+            return `${node}<div class="text-2xl text-amber-300">→</div>`;
+          })
+          .join("");
+      }
+
+      function renderAll() {
+        renderSummary();
+        renderRCA();
+        renderTimeline();
+        renderIncidents();
+        renderLatency();
+        renderTrace();
+        maybeRenderMlInsightsChart();
+        updateHeaderStaleNote();
+        setText("last-refresh", new Date().toLocaleTimeString());
+      }
+
+      async function fetchJSON(url) {
+        console.log("Fetching from:", url);
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        return response.json();
+      }
+
+      async function fetchRCA() {
+        try {
+          const data = await fetchJSON(`${API_BASE}/rca/latest`);
+          state.rca = data;
+          state.errors.rca = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.rca = null;
+          state.errors.rca = true;
+        }
+      }
+
+      async function fetchTimeline() {
+        try {
+          const data = await fetchJSON(`${API_BASE}/rca/timeline`);
+          state.timeline = data;
+          state.errors.timeline = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.timeline = null;
+          state.errors.timeline = true;
+        }
+      }
+
+      async function fetchIncidents() {
+        try {
+          const data = await fetchJSON(`${API_BASE}/incidents`);
+          if (Array.isArray(data.incidents)) {
+            state.incidents = data;
+          } else if (Array.isArray(data.incident_ids) && data.incident_ids.length) {
+            const details = await Promise.all(
+              data.incident_ids.slice(0, 10).map(async (incidentId) => {
+                try {
+                  const detail = await fetchJSON(`${API_BASE}/incidents/${encodeURIComponent(incidentId)}`);
+                  const rca = detail.rca || {};
+                  const remediation = detail.remediation || {};
+                  return {
+                    incident_id: detail.incident_id || incidentId,
+                    timestamp: rca.evaluated_at || detail.created_at,
+                    root_cause: Array.isArray(rca.primary_root_cause) ? rca.primary_root_cause[0] : null,
+                    confidence: rca.confidence || 0,
+                    status: rca.status || "UNKNOWN",
+                    affected_services: Array.isArray(rca.affected_services) ? rca.affected_services : [],
+                    causal_chain: Array.isArray(rca.causal_chain) ? rca.causal_chain : [],
+                    reasoning: Array.isArray(rca.reasoning) ? rca.reasoning : [],
+                    confidence_breakdown: rca.confidence_breakdown || {},
+                    confidence_reasoning: rca.confidence_explanation || "",
+                    remediation_action: remediation.action || null,
+                    remediation_status: remediation.status || (rca.status === "SUPPRESSED" ? "suppressed" : "pending"),
+                    outcome:
+                      remediation.details?.error
+                      || remediation.expected_recovery
+                      || remediation.reason
+                      || (rca.status === "SUPPRESSED" ? (rca.reason || "Suppressed due to low confidence") : "Awaiting remediation outcome"),
+                  };
+                } catch (err) {
+                  console.error("Fetch error:", err);
+                  return null;
+                }
+              })
+            );
+
+            state.incidents = {
+              incidents: details.filter(Boolean),
+              incident_ids: data.incident_ids,
+            };
+          } else {
+            state.incidents = { incidents: [], incident_ids: [] };
+          }
+          state.errors.incidents = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.incidents = null;
+          state.errors.incidents = true;
+        }
+      }
+
+      async function fetchLatency() {
+        try {
+          const data = await fetchJSON(`${API_BASE}/debug/latency`);
+          state.latency = data;
+          state.errors.latency = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.latency = null;
+          state.errors.latency = true;
+        }
+      }
+
+      async function fetchLiveEvents() {
+        try {
+          const data = await fetchJSON(`${API_BASE}/normalized-events?seconds=5`);
+          state.liveEvents = data;
+          state.errors.liveEvents = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.liveEvents = null;
+          state.errors.liveEvents = true;
+        }
+      }
+
+      async function fetchTrace(traceId) {
+        if (!traceId) {
+          state.trace = null;
+          state.errors.trace = false;
+          renderTrace();
+          return;
+        }
+        try {
+          const data = await fetchJSON(`${TRACE_API_BASE}/trace/view?trace_id=${encodeURIComponent(traceId)}`);
+          state.trace = data;
+          state.errors.trace = false;
+        } catch (err) {
+          console.error("Fetch error:", err);
+          state.trace = null;
+          state.errors.trace = true;
+        }
+        renderTrace();
+      }
+
+      async function refreshData() {
+        await Promise.all([fetchRCA(), fetchTimeline(), fetchIncidents(), fetchLatency(), fetchLiveEvents()]);
+        renderAll();
+      }
+
+      function setInjectionState(buttonId, spinnerId, labelId, loading, idleLabel) {
+        const button = document.getElementById(buttonId);
+        const spinner = document.getElementById(spinnerId);
+        const label = document.getElementById(labelId);
+        if (button) {
+          button.disabled = loading;
+        }
+        if (spinner) {
+          spinner.classList.toggle("hidden", !loading);
+        }
+        if (label) {
+          label.textContent = loading ? "Injecting..." : idleLabel;
+        }
+      }
+
+      async function injectFailure(payload, label, buttonId, spinnerId, labelId, idleLabel) {
+        const chip = document.getElementById("inject-status-chip");
+        const message = document.getElementById("inject-message");
+        setInjectionState(buttonId, spinnerId, labelId, true, idleLabel);
+        if (chip) {
+          chip.className = "dashboard-chip border-amber-400/35 bg-amber-500/10 text-amber-200";
+          chip.textContent = "Sending";
+        }
+        if (message) {
+          message.className = "mt-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 text-sm text-yellow-200 animate-fadein";
+          message.textContent = `Injecting ${label}...`;
+        }
+
+        try {
+          console.log("Fetching from:", INJECT_URL);
+          const response = await fetch(INJECT_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            let detail = `API error: ${response.status}`;
+            try {
+              const errorPayload = await response.json();
+              detail = errorPayload?.detail || detail;
+            } catch (parseError) {
+              console.error("Failed to parse inject error payload:", parseError);
+            }
+            throw new Error(detail);
+          }
+          const result = await response.json();
+          if (chip) {
+            chip.className = "dashboard-chip border-emerald-400/25 bg-emerald-500/10 text-emerald-300";
+            chip.textContent = "Injected";
+          }
+          if (message) {
+            message.className = "mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-200 animate-fadein";
+            message.textContent = `${serviceLabel(result.service)} ${result.type} fault injected for ${result.duration}s.`;
+          }
+          refreshData();
+        } catch (err) {
+          console.error("Fetch error:", err);
+          if (chip) {
+            chip.className = "dashboard-chip border-red-400/35 bg-red-500/10 text-red-300";
+            chip.textContent = "Failed";
+          }
+          if (message) {
+            message.className = "mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200 animate-fadein";
+            message.textContent = err.message;
+          }
+        } finally {
+          setInjectionState(buttonId, spinnerId, labelId, false, idleLabel);
+        }
+      }
+
+      document.getElementById("inject-db").addEventListener("click", () =>
+        injectFailure(
+          {
+            service: "database-service",
+            type: "latency",
+            duration: 10,
+          },
+          "DB failure",
+          "inject-db",
+          "inject-db-spinner",
+          "inject-db-label",
+          "Inject DB Failure"
+        )
+      );
+
+      document.getElementById("inject-cache").addEventListener("click", () =>
+        injectFailure(
+          {
+            service: "cache-service",
+            type: "error",
+            duration: 10,
+          },
+          "Cache failure",
+          "inject-cache",
+          "inject-cache-spinner",
+          "inject-cache-label",
+          "Inject Cache Failure"
+        )
+      );
+
+      document.getElementById("trace-load").addEventListener("click", () => {
+        const input = document.getElementById("trace-input");
+        fetchTrace(input?.value?.trim() || "");
+      });
+
+      document.getElementById("explain-mode-toggle").addEventListener("click", () => {
+        if (getFreezeActive()) {
+          state.explainMode = false;
+          renderAll();
+          return;
+        }
+        enterExplainModeFromLive();
+      });
+
+      document.getElementById("back-to-live").addEventListener("click", backToLive);
+
+      document.getElementById("trace-input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          const input = document.getElementById("trace-input");
+          fetchTrace(input?.value?.trim() || "");
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (landingState.dashboardVisible && state.selectedIncident && (event.key === "Enter" || event.key === "Return")) {
+          const activeElement = document.activeElement;
+          if (activeElement?.id === "trace-input") {
+            return;
+          }
+          event.preventDefault();
+          closeIncidentPopup();
+        }
+      });
+
+      document.getElementById("incident-detail-panel")?.addEventListener("click", (e) => {
+        const node = e.target;
+        const el = node.nodeType === 1 ? node : node.parentElement;
+        const btn = el && el.closest ? el.closest("#detail-download-btn") : null;
+        if (!btn) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const id = state.selectedIncident?.incident_id;
+        if (id) {
+          downloadIncidentReport(id);
+        }
+      });
+
+      initializeLandingExperience();
+    </script>
+  </body>
+</html>

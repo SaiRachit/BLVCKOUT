@@ -1,0 +1,209 @@
+services:
+  # 1. API Service (Public Entry Point)
+  - type: web
+    name: api-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/api_service/Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_NAME
+        value: api-service
+      - key: PORT
+        value: 10000
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service:8007
+      - key: CACHE_SERVICE_URL
+        value: http://cache-service:8001
+      - key: DATABASE_SERVICE_URL
+        value: http://database-service:8002
+      - key: PAYMENT_SERVICE_URL
+        value: http://payment-service:8008
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8009
+      - key: EVENT_PROCESSOR_SERVICE_URL
+        value: http://event-processor-service:8003
+      - key: RCA_SERVICE_URL
+        value: http://rca-service:8005
+      - key: SYNTHETIC_GENERATOR_SERVICE_URL
+        value: http://synthetic-generator-service:8004
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 2. Auth Service (Private)
+  - type: web
+    name: auth-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/auth_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: auth-service
+      - key: PORT
+        value: 8007
+      - key: CACHE_SERVICE_URL
+        value: http://cache-service:8001
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 3. Cache Service (Private)
+  - type: web
+    name: cache-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/cache_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: cache-service
+      - key: PORT
+        value: 8001
+      - key: DATABASE_SERVICE_URL
+        value: http://database-service:8002
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 4. Database Service (Private)
+  - type: web
+    name: database-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/database_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: database-service
+      - key: PORT
+        value: 8002
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 5. Event Processor (Private)
+  - type: web
+    name: event-processor-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/event_processor_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: event-processor-service
+      - key: PORT
+        value: 8003
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 6. RCA Service (Private)
+  - type: web
+    name: rca-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/rca_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: rca-service
+      - key: PORT
+        value: 8005
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 7. Remediation Service (Private)
+  - type: web
+    name: remediation-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/remediation_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: remediation-service
+      - key: PORT
+        value: 8006
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 8. Notification Service (Private)
+  - type: web
+    name: notification-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/notification_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: notification-service
+      - key: PORT
+        value: 8009
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 9. Payment Service (Private)
+  - type: web
+    name: payment-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/payment_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: payment-service
+      - key: PORT
+        value: 8008
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+
+  # 10. Synthetic Generator (Private)
+  - type: web
+    name: synthetic-generator-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services/synthetic_generator_service/Dockerfile
+    plan: free
+    envVars:
+      - key: SERVICE_NAME
+        value: synthetic-generator-service
+      - key: PORT
+        value: 8004
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: observability-redis
+          property: connectionString
+      - key: SYNTHETIC_GENERATOR_ENABLED
+        value: "true"
+
+  # 11. Redis Instance
+  - type: keyvalue
+    name: observability-redis
+    plan: free
+    ipAllowList: [] # Only internal access

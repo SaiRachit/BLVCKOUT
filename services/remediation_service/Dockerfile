@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["sh", "-c", "exec uvicorn services.remediation_service.app.main:app --host :: --port ${PORT:-8006}"]
+CMD ["sh", "-c", "exec uvicorn services.remediation_service.app.main:app --host 0.0.0.0 --port ${PORT:-8006}"]

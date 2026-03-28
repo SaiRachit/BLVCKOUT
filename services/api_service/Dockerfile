@@ -5,4 +5,4 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV PYTHONPATH=/app
-CMD ["sh", "-c", "exec uvicorn services.api_service.app.main:app --host :: --port ${PORT:-8000}"]
+CMD ["sh", "-c", "exec uvicorn services.api_service.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

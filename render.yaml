@@ -153,12 +153,3 @@ services:
       - key: PORT
         value: "10000"
     healthCheckPath: /health
-
-  # Static Frontend
-  - type: static_site
-    name: blvckout
-    plan: free
-    publishDir: .
-    envVars:
-      - key: API_URL
-        value: https://api-service-yq0m.onrender.com

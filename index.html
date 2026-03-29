@@ -303,6 +303,13 @@
         flex-direction: column;
         gap: 1.5rem;
       }
+      @media (min-width: 1024px) {
+        .dashboard-container .dashboard-side-panel-stack {
+          position: sticky;
+          top: 1.5rem;
+          align-self: start;
+        }
+      }
       .dashboard-container .dashboard-side-panel--latency {
         border-color: rgba(52, 211, 153, 0.16);
       }
@@ -721,7 +728,7 @@
             </div>
           </div>
 
-          <div id="incident-detail-panel" class="fixed inset-0 z-[120] hidden bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div id="incident-detail-panel" class="fixed inset-0 z-[120] hidden bg-slate-950/95 p-4 backdrop-blur-md">
             <div class="mx-auto flex h-full max-w-4xl items-center justify-center">
             <div class="relative max-h-[90vh] w-full overflow-y-auto rounded-3xl border border-amber-400/20 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity duration-300">
             <div class="flex flex-col gap-5">

@@ -12,49 +12,49 @@ services:
       # Bypass variables for UI Dashboard overrides
       - key: PRIVATE_AUTH_URL
         fromService:
-          type: pserv
+          type: web
           name: auth-pvt
           property: host
       - key: PRIVATE_CACHE_URL
         fromService:
-          type: pserv
+          type: web
           name: cache-pvt
           property: host
       - key: PRIVATE_DB_URL
         fromService:
-          type: pserv
+          type: web
           name: db-pvt
           property: host
       - key: PRIVATE_EP_URL
         fromService:
-          type: pserv
+          type: web
           name: ep-pvt
           property: host
       - key: PRIVATE_RCA_URL
         fromService:
-          type: pserv
+          type: web
           name: rca-pvt
           property: host
       - key: PRIVATE_SG_URL
         fromService:
-          type: pserv
+          type: web
           name: sg-pvt
           property: host
       - key: PRIVATE_NOTIF_URL
         fromService:
-          type: pserv
+          type: web
           name: notif-pvt
           property: host
       - key: PRIVATE_PAY_URL
         fromService:
-          type: pserv
+          type: web
           name: pay-pvt
           property: host
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
 
   # Internal Microservices (Private Network)
-  - type: pserv
+  - type: web
     name: auth-pvt
     plan: free
     runtime: docker
@@ -64,7 +64,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: cache-pvt
     plan: free
     runtime: docker
@@ -74,7 +74,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: db-pvt
     plan: free
     runtime: docker
@@ -84,7 +84,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: ep-pvt
     plan: free
     runtime: docker
@@ -94,7 +94,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: rca-pvt
     plan: free
     runtime: docker
@@ -104,7 +104,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: sg-pvt
     plan: free
     runtime: docker
@@ -114,7 +114,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: notif-pvt
     plan: free
     runtime: docker
@@ -124,7 +124,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: pay-pvt
     plan: free
     runtime: docker
@@ -134,7 +134,7 @@ services:
       - key: PORT
         value: "10000"
 
-  - type: pserv
+  - type: web
     name: remed-pvt
     plan: free
     runtime: docker

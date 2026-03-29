@@ -36,7 +36,10 @@ import os
 def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
     pvt_host = os.getenv(new_env)
     if pvt_host:
-        if ":" in pvt_host:
+        if ".onrender.com" in pvt_host:
+            # Web services are exposed over standard HTTPS
+            return f"https://{pvt_host}"
+        elif ":" in pvt_host:
             return f"http://{pvt_host}"
         else:
             return f"http://{pvt_host}:10000"

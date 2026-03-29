@@ -52,7 +52,6 @@ services:
           property: host
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
-    healthCheckPath: /health
 
   # Internal Microservices (Private Network)
   - type: pserv
@@ -64,7 +63,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: cache-pvt
@@ -75,7 +73,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: db-pvt
@@ -86,7 +83,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: ep-pvt
@@ -97,7 +93,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: rca-pvt
@@ -108,7 +103,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: sg-pvt
@@ -119,7 +113,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: notif-pvt
@@ -130,7 +123,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: pay-pvt
@@ -141,7 +133,6 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health
 
   - type: pserv
     name: remed-pvt
@@ -152,4 +143,3 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-    healthCheckPath: /health

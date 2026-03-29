@@ -297,6 +297,12 @@
         border-color: rgba(255, 255, 255, 0.09);
         background: rgba(15, 23, 42, 0.88);
       }
+      .dashboard-container .dashboard-side-panel-stack {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
       .dashboard-container .dashboard-side-panel--latency {
         border-color: rgba(52, 211, 153, 0.16);
       }
@@ -808,7 +814,8 @@
           </div>
         </article>
 
-        <section id="latency-card" class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 lg:col-start-5">
+        <div class="dashboard-side-panel-stack lg:col-span-8">
+        <section id="latency-card" class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200">
           <div class="dashboard-panel-header">
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Latency Panel</p>
@@ -852,7 +859,7 @@
           </div>
         </section>
 
-        <section class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--control rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 lg:col-start-9">
+        <section class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--control rounded-2xl border p-5 shadow-glow transition duration-200">
           <div class="dashboard-panel-header">
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Control Panel</p>
@@ -888,11 +895,12 @@
               </button>
             </div>
 
-            <div id="inject-message" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+          <div id="inject-message" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
               Trigger a synthetic fault to observe propagation and RCA updates.
             </div>
           </div>
         </section>
+        </div>
       </section>
     </main>
     </div>
@@ -2200,7 +2208,7 @@
           note.className = `mt-3 text-xs leading-5 ${hasDataError("latency") ? "text-red-400" : "text-slate-400"}`;
         }
         if (card) {
-          card.className = `dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 lg:col-start-5 ${
+          card.className = `dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 ${
             hasDataError("latency")
               ? "border-red-400/25 shadow-redglow"
               : within

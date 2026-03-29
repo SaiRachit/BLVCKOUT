@@ -30,6 +30,7 @@ from services.common.app.runtime import TRACE_ID_HEADER
 from services.common.app.runtime import attach_common_routes
 from services.common.app.runtime import lifespan
 from services.common.app.streaming import get_stream_publisher
+from services.api_service.app.routes.debug import router as debug_router
 
 SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
 import os

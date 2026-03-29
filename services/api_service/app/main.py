@@ -36,15 +36,21 @@ SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
 import os
 def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
     pvt_host = os.getenv(new_env)
+    print(f"[DEBUG] Resolving {new_env}: pvt_host={pvt_host}")
     if pvt_host:
         if ".onrender.com" in pvt_host:
-            # Web services are exposed over standard HTTPS
-            return f"https://{pvt_host}"
+            res = f"https://{pvt_host}"
         elif ":" in pvt_host:
-            return f"http://{pvt_host}"
+            res = f"http://{pvt_host}"
         else:
-            return f"http://{pvt_host}:10000"
-    return get_env(old_env, fallback)
+            res = f"http://{pvt_host}:10000"
+        print(f"[DEBUG] Resolved {new_env} to {res}")
+        return res
+    
+    val = get_env(old_env, fallback)
+    print(f"[DEBUG] Fallback for {new_env} (using {old_env}): {val}")
+    return val
+
 
 AUTH_SERVICE_URL = _resolve_url("AUTH_SERVICE_URL", "PRIVATE_AUTH_URL", "http://localhost:8007")
 CACHE_SERVICE_URL = _resolve_url("CACHE_SERVICE_URL", "PRIVATE_CACHE_URL", "http://localhost:8001")
@@ -81,6 +87,8 @@ logger = configure_logger(SERVICE_NAME)
 publisher = get_stream_publisher(logger)
 stream_backend = get_stream_backend()
 attach_common_routes(app, SERVICE_NAME, faults, metrics)
+app.include_router(debug_router)
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 INDEX_HTML_PATH = PROJECT_ROOT / "index.html"
 SERVICE_URLS = {

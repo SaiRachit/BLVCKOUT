@@ -35,6 +35,13 @@ from services.api_service.app.routes.debug import router as debug_router
 SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
 import os
 def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
+    # Prefer an explicit dashboard override when present. This makes it easy
+    # to bypass broken/private service discovery values on hosted platforms.
+    dash_val = os.getenv(old_env)
+    if dash_val:
+        print(f"[DEBUG] Using Dashboard override {old_env}: {dash_val}")
+        return dash_val
+
     pvt_host = os.getenv(new_env)
     print(f"[DEBUG] Starting resolution for {new_env}...")
     if pvt_host:
@@ -47,13 +54,7 @@ def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
             res = f"http://{pvt_host}:10000"
         print(f"[DEBUG] Successfully resolved {new_env} to: {res}")
         return res
-    
-    # Check if the old environment variable (e.g., RCA_SERVICE_URL) is set manually in the Dashboard
-    dash_val = os.getenv(old_env)
-    if dash_val:
-        print(f"[DEBUG] No Blueprint injection for {new_env}. Using Dashboard manual override {old_env}: {dash_val}")
-        return dash_val
-        
+
     print(f"[DEBUG] Using local fallback for {new_env}: {fallback}")
     return fallback
 

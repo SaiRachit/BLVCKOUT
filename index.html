@@ -715,11 +715,20 @@
             </div>
           </div>
 
-          <div id="incident-detail-panel" class="mt-4 hidden overflow-y-auto rounded-3xl border border-amber-400/20 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity duration-300">
+          <div id="incident-detail-panel" class="fixed inset-0 z-[120] hidden bg-slate-950/70 p-4 backdrop-blur-sm">
+            <div class="mx-auto flex h-full max-w-4xl items-center justify-center">
+            <div class="relative max-h-[90vh] w-full overflow-y-auto rounded-3xl border border-amber-400/20 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity duration-300">
             <div class="flex flex-col gap-5">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="text-xs tracking-[0.24em] text-amber-300 sm:mt-1">📋 Incident Report</p>
                 <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    id="detail-close-btn"
+                    class="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-slate-200 transition duration-200 hover:border-white/20 hover:bg-white/10"
+                  >
+                    Close
+                  </button>
                   <button
                     type="button"
                     id="detail-download-btn"
@@ -795,6 +804,9 @@
               </ul>
             </div>
           </div>
+          </div>
+          </div>
+          </div>
         </article>
 
         <section id="latency-card" class="dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4">
@@ -807,19 +819,10 @@
               <span id="latency-indicator" class="dashboard-chip border-emerald-400/25 bg-emerald-500/10 text-emerald-300">
                 HEALTHY
               </span>
-              <button
-                type="button"
-                class="dashboard-collapsible-toggle"
-                aria-expanded="false"
-                data-collapsible-target="latency"
-              >
-                Expand
-              </button>
             </div>
           </div>
-          <p class="dashboard-collapsed-hint">Expand to view latency metrics and SLA utilization.</p>
 
-          <div id="dashboard-latency-body" class="dashboard-collapsible-body mt-3 hidden">
+          <div id="dashboard-latency-body" class="dashboard-collapsible-body mt-3">
             <div class="grid grid-cols-1 gap-3">
               <div class="rounded-2xl border border-white/10 bg-panelSoft p-4">
                 <p id="latency-avg-label" class="text-xs uppercase tracking-[0.24em] text-slate-400">Avg Latency</p>
@@ -859,19 +862,10 @@
               <span id="inject-status-chip" class="dashboard-chip text-slate-300">
                 Ready
               </span>
-              <button
-                type="button"
-                class="dashboard-collapsible-toggle"
-                aria-expanded="false"
-                data-collapsible-target="control"
-              >
-                Expand
-              </button>
             </div>
           </div>
-          <p class="dashboard-collapsed-hint">Expand to run controlled fault injections against services.</p>
 
-          <div id="dashboard-control-body" class="dashboard-collapsible-body mt-3 hidden">
+          <div id="dashboard-control-body" class="dashboard-collapsible-body mt-3">
             <div class="grid gap-3">
               <button
                 id="inject-db"
@@ -1235,18 +1229,14 @@
 
       function renderIncidentDetail() {
         const panel = document.getElementById("incident-detail-panel");
-        const listContainer = document.getElementById("incident-list");
         const detail = state.selectedIncident;
         if (!panel) {
           return;
         }
         if (!detail) {
           panel.classList.add("hidden");
-          if (listContainer) listContainer.classList.remove("hidden");
           return;
         }
-
-        if (listContainer) listContainer.classList.add("hidden");
 
         const rca = detail.rca || {};
         const remediation = detail.remediation || {};
@@ -2498,7 +2488,7 @@
       });
 
       document.addEventListener("keydown", (event) => {
-        if (landingState.dashboardVisible && state.selectedIncident && (event.key === "Enter" || event.key === "Return")) {
+        if (landingState.dashboardVisible && state.selectedIncident && event.key === "Escape") {
           const activeElement = document.activeElement;
           if (activeElement?.id === "trace-input") {
             return;
@@ -2511,7 +2501,13 @@
       document.getElementById("incident-detail-panel")?.addEventListener("click", (e) => {
         const node = e.target;
         const el = node.nodeType === 1 ? node : node.parentElement;
+        const closeBtn = el && el.closest ? el.closest("#detail-close-btn") : null;
         const btn = el && el.closest ? el.closest("#detail-download-btn") : null;
+        if (closeBtn || e.target === e.currentTarget) {
+          e.preventDefault();
+          closeIncidentPopup();
+          return;
+        }
         if (!btn) {
           return;
         }

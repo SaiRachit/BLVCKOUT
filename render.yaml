@@ -13,49 +13,49 @@ services:
       - key: PRIVATE_AUTH_URL
         fromService:
           type: web
-          name: auth-pvt
+          name: auth-service
           property: host
       - key: PRIVATE_CACHE_URL
         fromService:
           type: web
-          name: cache-pvt
+          name: cache-service
           property: host
       - key: PRIVATE_DB_URL
         fromService:
           type: web
-          name: db-pvt
+          name: database-service
           property: host
       - key: PRIVATE_EP_URL
         fromService:
           type: web
-          name: ep-pvt
+          name: event-processor-service
           property: host
       - key: PRIVATE_RCA_URL
         fromService:
           type: web
-          name: rca-pvt
+          name: rca-service
           property: host
       - key: PRIVATE_SG_URL
         fromService:
           type: web
-          name: sg-pvt
+          name: synthetic-generator-service
           property: host
       - key: PRIVATE_NOTIF_URL
         fromService:
           type: web
-          name: notif-pvt
+          name: notification-service
           property: host
       - key: PRIVATE_PAY_URL
         fromService:
           type: web
-          name: pay-pvt
+          name: payment-service
           property: host
       - key: API_SERVICE_URL
         value: https://api-service-yq0m.onrender.com
 
-  # Internal Microservices (Private Network)
+  # Internal Microservices (Public Web Services for Free Tier)
   - type: web
-    name: auth-pvt
+    name: auth-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -65,7 +65,7 @@ services:
         value: "10000"
 
   - type: web
-    name: cache-pvt
+    name: cache-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -75,7 +75,7 @@ services:
         value: "10000"
 
   - type: web
-    name: db-pvt
+    name: database-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -85,7 +85,7 @@ services:
         value: "10000"
 
   - type: web
-    name: ep-pvt
+    name: event-processor-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -95,7 +95,7 @@ services:
         value: "10000"
 
   - type: web
-    name: rca-pvt
+    name: rca-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -105,7 +105,7 @@ services:
         value: "10000"
 
   - type: web
-    name: sg-pvt
+    name: synthetic-generator-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -115,7 +115,7 @@ services:
         value: "10000"
 
   - type: web
-    name: notif-pvt
+    name: notification-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -125,7 +125,7 @@ services:
         value: "10000"
 
   - type: web
-    name: pay-pvt
+    name: payment-service
     plan: free
     runtime: docker
     dockerContext: .
@@ -135,7 +135,7 @@ services:
         value: "10000"
 
   - type: web
-    name: remed-pvt
+    name: remediation-service
     plan: free
     runtime: docker
     dockerContext: .

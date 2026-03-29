@@ -36,20 +36,26 @@ SERVICE_NAME = get_env("SERVICE_NAME", "api-service")
 import os
 def _resolve_url(old_env: str, new_env: str, fallback: str) -> str:
     pvt_host = os.getenv(new_env)
-    print(f"[DEBUG] Resolving {new_env}: pvt_host={pvt_host}")
+    print(f"[DEBUG] Starting resolution for {new_env}...")
     if pvt_host:
+        print(f"[DEBUG] Found Blueprint injection for {new_env}: {pvt_host}")
         if ".onrender.com" in pvt_host:
             res = f"https://{pvt_host}"
         elif ":" in pvt_host:
             res = f"http://{pvt_host}"
         else:
             res = f"http://{pvt_host}:10000"
-        print(f"[DEBUG] Resolved {new_env} to {res}")
+        print(f"[DEBUG] Successfully resolved {new_env} to: {res}")
         return res
     
-    val = get_env(old_env, fallback)
-    print(f"[DEBUG] Fallback for {new_env} (using {old_env}): {val}")
-    return val
+    # Check if the old environment variable (e.g., RCA_SERVICE_URL) is set manually in the Dashboard
+    dash_val = os.getenv(old_env)
+    if dash_val:
+        print(f"[DEBUG] No Blueprint injection for {new_env}. Using Dashboard manual override {old_env}: {dash_val}")
+        return dash_val
+        
+    print(f"[DEBUG] Using local fallback for {new_env}: {fallback}")
+    return fallback
 
 
 AUTH_SERVICE_URL = _resolve_url("AUTH_SERVICE_URL", "PRIVATE_AUTH_URL", "http://localhost:8007")

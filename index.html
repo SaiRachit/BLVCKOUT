@@ -911,12 +911,34 @@
         return hostname;
       }
 
+      const DEFAULT_REMOTE_API_BASE = "https://api-service-yq0m.onrender.com";
+
+      function normalizeApiBase(value) {
+        return String(value || "").trim().replace(/\/+$/, "");
+      }
+
       function resolveApiBase() {
         const params = new URLSearchParams(window.location.search);
         const fromQuery = params.get("api");
         if (fromQuery !== null) {
-          const trimmed = fromQuery.trim().replace(/\/+$/, "");
-          return trimmed || "";
+          return normalizeApiBase(fromQuery);
+        }
+
+        const fromGlobal =
+          typeof window !== "undefined" && typeof window.__BLVCKOUT_API_BASE__ === "string"
+            ? window.__BLVCKOUT_API_BASE__
+            : "";
+        if (fromGlobal) {
+          return normalizeApiBase(fromGlobal);
+        }
+
+        try {
+          const fromStorage = window.localStorage.getItem("blvckout.apiBase");
+          if (fromStorage) {
+            return normalizeApiBase(fromStorage);
+          }
+        } catch (error) {
+          console.warn("Unable to read persisted API base:", error);
         }
 
         const { protocol, hostname, port, origin } = window.location;
@@ -933,8 +955,12 @@
           const h = hostBracketed(hostname);
           return `${protocol}//${h}:8000`;
         }
-        if (hostname.includes("onrender.com") && hostname.includes("blvckout")) {
-          return "https://api-service-yq0m.onrender.com";
+        if (
+          hostname.includes("onrender.com")
+          || hostname.includes(".vercel.app")
+          || hostname.includes(".vercel-dns.com")
+        ) {
+          return DEFAULT_REMOTE_API_BASE;
         }
         return origin;
       }
@@ -2201,7 +2227,18 @@
         console.log("Fetching from:", url);
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          let detail = "";
+          try {
+            const payload = await response.clone().json();
+            detail = payload?.detail || payload?.message || JSON.stringify(payload);
+          } catch (jsonError) {
+            try {
+              detail = await response.text();
+            } catch (textError) {
+              detail = "";
+            }
+          }
+          throw new Error(detail ? `API error: ${response.status} - ${detail}` : `API error: ${response.status}`);
         }
         return response.json();
       }

@@ -965,8 +965,6 @@
         return origin;
       }
 
-      const LIVE_EVENTS_WINDOW_SECONDS = 10;
-      const TRACE_LOOKBACK_SECONDS = 10;
       const CONTROL_API_BASE = resolveApiBase();
       const API_BASE = CONTROL_API_BASE;
       const TRACE_API_BASE = CONTROL_API_BASE;
@@ -2336,7 +2334,7 @@
 
       async function fetchLiveEvents() {
         try {
-          const data = await fetchJSON(`${API_BASE}/normalized-events?seconds=${LIVE_EVENTS_WINDOW_SECONDS}`);
+          const data = await fetchJSON(`${API_BASE}/normalized-events?seconds=5`);
           state.liveEvents = data;
           state.errors.liveEvents = false;
         } catch (err) {
@@ -2354,9 +2352,7 @@
           return;
         }
         try {
-          const data = await fetchJSON(
-            `${TRACE_API_BASE}/trace/view?trace_id=${encodeURIComponent(traceId)}&seconds=${TRACE_LOOKBACK_SECONDS}`
-          );
+          const data = await fetchJSON(`${TRACE_API_BASE}/trace/view?trace_id=${encodeURIComponent(traceId)}`);
           state.trace = data;
           state.errors.trace = false;
         } catch (err) {

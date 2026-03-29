@@ -815,13 +815,13 @@
               <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Latency Panel</p>
               <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Pipeline performance</h2>
             </div>
-            <div class="dashboard-panel-header-actions">
-              <span id="latency-indicator" class="dashboard-chip border-emerald-400/25 bg-emerald-500/10 text-emerald-300">
+            <div class="dashboard-panel-header-actions flex flex-wrap items-center justify-end gap-2">
+              <span id="latency-indicator" class="dashboard-chip inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
                 HEALTHY
               </span>
               <button
                 type="button"
-                class="dashboard-collapsible-toggle"
+                class="dashboard-collapsible-toggle inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-amber-300/40 hover:text-amber-200"
                 aria-expanded="false"
                 data-collapsible-target="latency"
               >
@@ -829,7 +829,7 @@
               </button>
             </div>
           </div>
-          <p class="dashboard-collapsed-hint">Expand to view latency metrics and SLA utilization.</p>
+          <p class="dashboard-collapsed-hint mt-2 text-xs leading-5 text-slate-400">Expand to view latency metrics and SLA utilization.</p>
 
           <div id="dashboard-latency-body" class="dashboard-collapsible-body mt-3 hidden">
             <div class="grid grid-cols-1 gap-3">
@@ -867,13 +867,13 @@
               <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Control Panel</p>
               <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Failure injection</h2>
             </div>
-            <div class="dashboard-panel-header-actions">
-              <span id="inject-status-chip" class="dashboard-chip text-slate-300">
+            <div class="dashboard-panel-header-actions flex flex-wrap items-center justify-end gap-2">
+              <span id="inject-status-chip" class="dashboard-chip inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
                 Ready
               </span>
               <button
                 type="button"
-                class="dashboard-collapsible-toggle"
+                class="dashboard-collapsible-toggle inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-amber-300/40 hover:text-amber-200"
                 aria-expanded="false"
                 data-collapsible-target="control"
               >
@@ -881,7 +881,7 @@
               </button>
             </div>
           </div>
-          <p class="dashboard-collapsed-hint">Expand to run controlled fault injections against services.</p>
+          <p class="dashboard-collapsed-hint mt-2 text-xs leading-5 text-slate-400">Expand to run controlled fault injections against services.</p>
 
           <div id="dashboard-control-body" class="dashboard-collapsible-body mt-3 hidden">
             <div class="grid gap-3">

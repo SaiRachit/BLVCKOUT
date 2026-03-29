@@ -804,7 +804,6 @@
               </ul>
             </div>
             </div>
-            </div>
           </div>
           </div>
         </article>
@@ -1762,14 +1761,15 @@
       }
 
       function updateHeaderStaleNote() {
-        const hasAnyError = Object.values(state.errors).some(Boolean);
+        const coreErrorKeys = ["rca", "timeline", "incidents", "latency", "liveEvents"];
+        const hasCoreLiveError = coreErrorKeys.every((key) => Boolean(state.errors[key]));
         const existing = document.getElementById("stale-data-note");
         const refreshCard = document.getElementById("last-refresh")?.parentElement?.parentElement;
         if (!refreshCard) {
           return;
         }
 
-        if (!hasAnyError) {
+        if (!hasCoreLiveError) {
           if (existing) {
             existing.remove();
           }
@@ -2200,7 +2200,7 @@
           note.className = `mt-3 text-xs leading-5 ${hasDataError("latency") ? "text-red-400" : "text-slate-400"}`;
         }
         if (card) {
-          card.className = `dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 ${
+          card.className = `dashboard-collapsible dashboard-widget dashboard-side-panel dashboard-side-panel--latency rounded-2xl border p-5 shadow-glow transition duration-200 lg:col-span-4 lg:col-start-5 ${
             hasDataError("latency")
               ? "border-red-400/25 shadow-redglow"
               : within

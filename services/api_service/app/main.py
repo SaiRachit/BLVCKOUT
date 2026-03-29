@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from fastapi.responses import PlainTextResponse
+from fastapi.responses import Response
 
 from services.common.app.broker import get_stream_backend
 from services.common.app.config import get_env
@@ -115,12 +116,8 @@ async def _proxy_json(method: str, url: str, **kwargs) -> JSONResponse:
         # Diagnostic: Include the raw exception string to identify DNS/Port/Timeout issues
         raise HTTPException(status_code=502, detail=f"Upstream unavailable: {url} | Error: {str(exc)}") from exc
 
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise HTTPException(status_code=502, detail=f"Invalid upstream response: {url}") from exc
-
-    return JSONResponse(status_code=response.status_code, content=payload)
+    media_type = response.headers.get("content-type", "application/json")
+    return Response(content=response.content, status_code=response.status_code, media_type=media_type)
 
 
 def _ingest_payload(payload: ExternalIngestPayload, *, topic: str) -> dict:
@@ -764,7 +761,6 @@ async def proxy_incident_download(incident_id: str):
         raise HTTPException(status_code=502, detail=f"Upstream unavailable: {RCA_SERVICE_URL}") from exc
     if response.status_code == 404:
         raise HTTPException(status_code=404, detail="Incident not found")
-    from fastapi.responses import Response
     return Response(
         content=response.content,
         media_type=response.headers.get("content-type", "application/pdf"),
